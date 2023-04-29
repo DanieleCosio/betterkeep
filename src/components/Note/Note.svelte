@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type NoteNode from '$types/NoteNode';
+	import { element } from 'svelte/internal';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import { compareNoteNodes, getNodesIndex } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
+	let dragging: boolean = false;
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
@@ -39,7 +41,7 @@
 				isHovered: false,
 				isFocused: false,
 				isDragging: false,
-				isOvered: false,
+
 				depth: 0,
 				parent_id: null,
 				order: 0
@@ -57,7 +59,6 @@
 			isHovered: false,
 			isFocused: false,
 			isDragging: false,
-			isOvered: false,
 			depth: 0,
 			parent_id: null,
 			order: nodes[nodesIndex[event.detail.id]].order + 1
@@ -70,8 +71,33 @@
 		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
 	}
+
+	function handleDragStarted(event: CustomEvent<{ id: string }>) {
+		dragging = true;
+	}
+
+	function handleDragEnded(event: CustomEvent<{ id: string }>) {
+		dragging = false;
+	}
+
+	function handleDragEntered(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
+		if (!event.detail.htmlNode || !event.detail.htmlNode.parentElement) {
+			return;
+		}
+
+		event.detail.htmlNode.parentElement.classList.remove('brightness-75');
+	}
+
+	function handleDragLeft(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
+		if (!event.detail.htmlNode || !event.detail.htmlNode.parentElement) {
+			return;
+		}
+
+		event.detail.htmlNode.parentElement.classList.add('brightness-75');
+	}
 </script>
 
+<!-- Sto cazzo di hover non worka -->
 <div class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
 	<input
 		type="text"
@@ -79,9 +105,19 @@
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
 	/>
-	<fieldset>
+	<fieldset class="flex flex-col gap-2">
 		{#each nodes as node (node.id)}
-			<Node on:delete={handleDelete} {node} on:add={handleAdd} />
+			<div class:brightness-75={dragging}>
+				<Node
+					{node}
+					on:add={handleAdd}
+					on:delete={handleDelete}
+					on:dragstarted={handleDragStarted}
+					on:dragended={handleDragEnded}
+					on:dragentered={handleDragEntered}
+					on:dragleft={handleDragLeft}
+				/>
+			</div>
 		{/each}
 	</fieldset>
 </div>

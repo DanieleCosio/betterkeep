@@ -2,8 +2,10 @@
 	import { getRandomString } from '../utils';
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 
 	let htmlNode: HTMLTextAreaElement | undefined = undefined;
+	let childsAreaHtmlNode: HTMLDivElement | undefined = undefined;
 	const dispatch = createEventDispatcher();
 
 	export let node: NodeProps = {
@@ -12,15 +14,10 @@
 		isHovered: false,
 		isFocused: false,
 		isDragging: false,
-		isOvered: false,
 		depth: 0
 	};
 
 	function handleFocus() {
-		if (htmlNode?.matches(':focus')) {
-			node.isHovered = true;
-		}
-
 		node.isFocused = true;
 	}
 
@@ -54,18 +51,33 @@
 
 	function handleDragStart(event: DragEvent) {
 		node.isDragging = true;
+		dispatch('dragstarted', {
+			id: node.id
+		});
 	}
 
 	function handleDragEnd(event: DragEvent) {
 		node.isDragging = false;
+		dispatch('dragended', {
+			id: node.id
+		});
 	}
 
 	function handleDragEnter(event: DragEvent) {
-		node.isOvered = true;
+		node.isHovered = true;
+
+		dispatch('dragentered', {
+			id: node.id,
+			htmlNode: htmlNode?.parentElement?.parentElement ?? undefined
+		});
 	}
 
 	function handleDragLeave(event: DragEvent) {
-		node.isOvered = false;
+		node.isHovered = false;
+		dispatch('dragleft', {
+			id: node.id,
+			htmlNode: htmlNode?.parentElement?.parentElement ?? undefined
+		});
 	}
 
 	onMount(() => {
@@ -77,7 +89,15 @@
 	});
 </script>
 
-<div draggable="true">
+<div
+	on:dragstart={handleDragStart}
+	on:dragend={handleDragEnd}
+	on:dragenter={handleDragEnter}
+	on:dragleave={handleDragLeave}
+	on:dragover|preventDefault
+	draggable="true"
+	class="flex justify-center flex-col"
+>
 	<div class="flex gap-2">
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
@@ -86,18 +106,13 @@
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
-			on:dragstart={handleDragStart}
-			on:dragend={handleDragEnd}
-			on:dragenter={handleDragEnter}
-			on:dragleave={handleDragLeave}
 			style="padding-left: {node.depth * 20}px;"
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
 			rows="1"
 		/>
 	</div>
 
-	<div
-		class="border-2 transition-all duration-1000 ease-in opacity-0"
-		class:opacity-100={node.children.length > 0}
-	/>
+	{#if node.isHovered || node.children.length > 0}
+		<div bind:this={childsAreaHtmlNode} transition:fade />
+	{/if}
 </div>
