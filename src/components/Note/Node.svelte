@@ -5,7 +5,6 @@
 	import { fade } from 'svelte/transition';
 
 	let htmlNode: HTMLTextAreaElement | undefined = undefined;
-	let childsAreaHtmlNode: HTMLDivElement | undefined = undefined;
 	const dispatch = createEventDispatcher();
 
 	export let node: NodeProps = {
@@ -63,7 +62,9 @@
 		});
 	}
 
+	let dragCounter = 0;
 	function handleDragEnter(event: DragEvent) {
+		dragCounter++;
 		node.isHovered = true;
 
 		dispatch('dragentered', {
@@ -73,6 +74,11 @@
 	}
 
 	function handleDragLeave(event: DragEvent) {
+		dragCounter--;
+		if (dragCounter > 0) {
+			return;
+		}
+
 		node.isHovered = false;
 		dispatch('dragleft', {
 			id: node.id,
@@ -121,6 +127,6 @@
 	</div>
 
 	{#if node.isHovered || node.children.length > 0}
-		<div bind:this={childsAreaHtmlNode} transition:fade />
+		<div transition:fade class="h-8 bg-lime-600" />
 	{/if}
 </div>

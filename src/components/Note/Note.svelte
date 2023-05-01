@@ -87,7 +87,7 @@
 			return;
 		}
 
-		event.detail.htmlNode.parentElement.classList.remove('brightness-75');
+		event.detail.htmlNode.classList.add('!brightness-100');
 	}
 
 	function handleDragLeft(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
@@ -95,7 +95,7 @@
 			return;
 		}
 
-		event.detail.htmlNode.parentElement.classList.add('brightness-75');
+		event.detail.htmlNode.classList.remove('!brightness-100');
 	}
 
 	function handleDropped(event: CustomEvent<{ id: string }>) {
@@ -117,7 +117,6 @@
 	}
 </script>
 
-<!-- Sto cazzo di hover non worka -->
 <div class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
 	<input
 		type="text"
@@ -125,20 +124,20 @@
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
 	/>
-	<fieldset class="flex flex-col gap-2">
+	<fieldset class="flex flex-col gap-2 {isDragging ? '[&>div]:brightness-75' : ''}">
 		{#each nodes as node (node.id)}
-			<div class:brightness-75={isDragging}>
-				<Node
-					{node}
-					on:add={handleAdd}
-					on:delete={handleDelete}
-					on:dragstarted={handleDragStarted}
-					on:dragended={handleDragEnded}
-					on:dragentered={handleDragEntered}
-					on:dragleft={handleDragLeft}
-					on:dropped={handleDropped}
-				/>
-			</div>
+			<Node
+				{node}
+				on:add={handleAdd}
+				on:delete={handleDelete}
+				on:dragstarted={handleDragStarted}
+				on:dragended={handleDragEnded}
+				on:dragentered={handleDragEntered}
+				on:dragleft={handleDragLeft}
+				on:dropped={handleDropped}
+			/>
 		{/each}
 	</fieldset>
 </div>
+
+<style></style>
