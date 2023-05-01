@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type NoteNode from '$types/NoteNode';
-	import { element } from 'svelte/internal';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import { compareNoteNodes, getNodesIndex } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
-	let dragging: boolean = false;
+	let isDragging: boolean = false;
+	let draggedNodeId: string | undefined = undefined;
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
@@ -73,11 +73,13 @@
 	}
 
 	function handleDragStarted(event: CustomEvent<{ id: string }>) {
-		dragging = true;
+		isDragging = true;
+		draggedNodeId = event.detail.id;
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
-		dragging = false;
+		isDragging = false;
+		draggedNodeId = undefined;
 	}
 
 	function handleDragEntered(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
@@ -95,6 +97,24 @@
 
 		event.detail.htmlNode.parentElement.classList.add('brightness-75');
 	}
+
+	function handleDropped(event: CustomEvent<{ id: string }>) {
+		let droppedId: string = event.detail.id;
+
+		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
+			return;
+		}
+
+		const draggedNodePosition = nodesIndex[draggedNodeId];
+		const droppedNodePosition = nodesIndex[droppedId];
+
+		const droppedNode = nodes[droppedNodePosition];
+		nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
+		nodes.splice(draggedNodePosition, 1, droppedNode);
+
+		nodesIndex = getNodesIndex(nodes);
+		nodes = nodes;
+	}
 </script>
 
 <!-- Sto cazzo di hover non worka -->
@@ -107,7 +127,7 @@
 	/>
 	<fieldset class="flex flex-col gap-2">
 		{#each nodes as node (node.id)}
-			<div class:brightness-75={dragging}>
+			<div class:brightness-75={isDragging}>
 				<Node
 					{node}
 					on:add={handleAdd}
@@ -116,6 +136,7 @@
 					on:dragended={handleDragEnded}
 					on:dragentered={handleDragEntered}
 					on:dragleft={handleDragLeft}
+					on:dropped={handleDropped}
 				/>
 			</div>
 		{/each}

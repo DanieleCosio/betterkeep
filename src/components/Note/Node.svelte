@@ -80,6 +80,13 @@
 		});
 	}
 
+	function handleDrop(event: DragEvent) {
+		node.isHovered = false;
+		dispatch('dropped', {
+			id: node.id
+		});
+	}
+
 	onMount(() => {
 		if (!htmlNode) {
 			return;
@@ -95,6 +102,7 @@
 	on:dragenter={handleDragEnter}
 	on:dragleave={handleDragLeave}
 	on:dragover|preventDefault
+	on:drop|preventDefault={handleDrop}
 	draggable="true"
 	class="flex justify-center flex-col"
 >
