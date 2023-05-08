@@ -4,12 +4,12 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
-	let htmlNode: HTMLTextAreaElement | undefined = undefined;
+	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
+	let nodeHtml: HTMLDivElement | undefined = undefined;
 	const dispatch = createEventDispatcher();
 
 	export let node: NodeProps = {
 		id: getRandomString(8),
-		children: [],
 		isHovered: false,
 		isFocused: false,
 		isDragging: false,
@@ -22,7 +22,7 @@
 
 	function handleBlur() {
 		node.isHovered = false;
-		if (htmlNode?.value === '') {
+		if (textAreaHtml?.value === '') {
 			dispatch('delete', {
 				id: node.id
 			});
@@ -30,12 +30,12 @@
 	}
 
 	function handleInput() {
-		if (!htmlNode) {
+		if (!textAreaHtml) {
 			return;
 		}
 
-		htmlNode.style.height = 'auto';
-		htmlNode.style.height = htmlNode.scrollHeight + 'px';
+		textAreaHtml.style.height = 'auto';
+		textAreaHtml.style.height = textAreaHtml.scrollHeight + 'px';
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -51,7 +51,8 @@
 	function handleDragStart(event: DragEvent) {
 		node.isDragging = true;
 		dispatch('dragstarted', {
-			id: node.id
+			id: node.id,
+			nodeHtml: nodeHtml
 		});
 	}
 
@@ -69,7 +70,7 @@
 
 		dispatch('dragentered', {
 			id: node.id,
-			htmlNode: htmlNode?.parentElement?.parentElement ?? undefined
+			htmlNode: textAreaHtml?.parentElement?.parentElement ?? undefined
 		});
 	}
 
@@ -82,7 +83,7 @@
 		node.isHovered = false;
 		dispatch('dragleft', {
 			id: node.id,
-			htmlNode: htmlNode?.parentElement?.parentElement ?? undefined
+			htmlNode: textAreaHtml?.parentElement?.parentElement ?? undefined
 		});
 	}
 
@@ -93,40 +94,71 @@
 		});
 	}
 
-	onMount(() => {
-		if (!htmlNode) {
+	function handleInChildrenArea(event: DragEvent) {
+		node.isHovered = false;
+		dispatch('inchildrenarea', {
+			id: node.id
+		});
+	}
+
+	function handleMouseDown(event: MouseEvent) {
+		if (event.button !== 0) {
 			return;
 		}
 
-		htmlNode.focus();
+		console.log('drag started!');
+
+		node.isDragging = true;
+		dispatch('dragstarted', {
+			id: node.id,
+			nodeHtml: nodeHtml,
+			position: {
+				x: event.clientX,
+				y: event.clientY
+			}
+		});
+	}
+
+	function handleMouseUp() {
+		if (!node.isDragging) {
+			return;
+		}
+
+		node.isDragging = false;
+		dispatch('dragended', {
+			id: node.id
+		});
+	}
+
+	onMount(() => {
+		if (!textAreaHtml) {
+			return;
+		}
+
+		textAreaHtml.focus();
 	});
 </script>
 
 <div
-	on:dragstart={handleDragStart}
-	on:dragend={handleDragEnd}
-	on:dragenter={handleDragEnter}
-	on:dragleave={handleDragLeave}
-	on:dragover|preventDefault
-	on:drop|preventDefault={handleDrop}
-	draggable="true"
-	class="flex justify-center flex-col"
+	on:mousedown|preventDefault={handleMouseDown}
+	on:mouseup={handleMouseUp}
+	bind:this={nodeHtml}
+	class="flex justify-center flex-col w-[100%]"
 >
-	<div class="flex gap-2">
+	<div style="margin-left: {node.depth * 20}px;" class="flex gap-2">
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
-			bind:this={htmlNode}
+			bind:this={textAreaHtml}
 			on:focus={handleFocus}
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
-			style="padding-left: {node.depth * 20}px;"
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
 			rows="1"
 		/>
 	</div>
 
-	{#if node.isHovered || node.children.length > 0}
+	{#if node.isHovered}
 		<div transition:fade class="h-8 bg-lime-600" />
 	{/if}
 </div>

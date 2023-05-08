@@ -1,4 +1,5 @@
 import type NoteNode from '$types/NoteNode';
+import type Rect from '$types/Rect';
 
 export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): number {
 	if (a.parent_id === b.parent_id) {
@@ -23,6 +24,10 @@ export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): nu
 	return 0;
 }
 
+export function getChildrenNodes(nodes: NoteNode[], id: string | undefined): NoteNode[] {
+	return nodes.filter((element) => element.parent_id === id);
+}
+
 export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 	const nodesIndex: { [key: string]: number } = {};
 
@@ -31,4 +36,17 @@ export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 	}
 
 	return nodesIndex;
+}
+
+export function isDraggableInBounding(containerRect: Rect, nodeRect: Rect): boolean {
+	if (
+		nodeRect.x < containerRect.x ||
+		nodeRect.y < containerRect.y ||
+		nodeRect.x + nodeRect.width >= containerRect.x + containerRect.width ||
+		nodeRect.y + nodeRect.height >= containerRect.y + containerRect.height
+	) {
+		return false;
+	}
+
+	return true;
 }
