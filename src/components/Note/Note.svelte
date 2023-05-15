@@ -4,7 +4,7 @@
 	import { debug } from 'svelte/internal';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { compareNoteNodes, getChildrenNodes, getNodesIndex, isDraggableInBounding } from './note';
+	import { compareNoteNodes, getNodesIndex, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -23,7 +23,6 @@
 		}
 
 		nodes.splice(position, 1);
-		nodes.sort(compareNoteNodes.bind(nodes));
 		nodes = nodes;
 
 		nodesIndex = getNodesIndex(nodes);
@@ -109,6 +108,7 @@
 	}
 
 	function handleDropped(event: CustomEvent<{ id: string }>) {
+		console.log('handleDropped');
 		let droppedId: string = event.detail.id;
 
 		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
@@ -117,13 +117,53 @@
 
 		const draggedNodePosition = nodesIndex[draggedNodeId];
 		const droppedNodePosition = nodesIndex[droppedId];
-
 		const droppedNode = nodes[droppedNodePosition];
-		nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
-		nodes.splice(draggedNodePosition, 1, droppedNode);
+		let tmpNodes = nodes;
 
+		const swap = nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id;
+		if (swap) {
+			const droppedNode = nodes[droppedNodePosition];
+			nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
+			nodes.splice(draggedNodePosition, 1, droppedNode);
+			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
+		} else {
+			const draggedNodePosition = nodesIndex[draggedNodeId];
+			const draggedNode = nodes[draggedNodePosition];
+
+			nodes[droppedNodePosition].isHovered = false;
+			nodes.splice(draggedNodePosition, 1);
+			nodes.splice(droppedNodePosition - 1, 0, draggedNode); // !!!
+			nodes[droppedNodePosition - 1].depth = droppedNode.depth;
+			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
+		}
+
+		nodesIndex = getNodesIndex(tmpNodes);
+		nodes = tmpNodes;
+	}
+
+	function handleAddChild(event: CustomEvent<{ id: string }>) {
+		console.log('handleAddChild');
+		const droppedId: string = event.detail.id;
+		const droppedNodePosition = nodesIndex[droppedId];
+		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
+			nodes[droppedNodePosition].isHovered = false;
+			return;
+		}
+
+		const draggedNodePosition = nodesIndex[draggedNodeId];
+		const draggedNode = nodes[draggedNodePosition];
+
+		nodes[droppedNodePosition].isHovered = false;
+		nodes.splice(draggedNodePosition, 1);
+		nodes.splice(droppedNodePosition, 0, draggedNode);
+
+		nodes[droppedNodePosition].parent_id = droppedId;
+		nodes[droppedNodePosition].depth = nodes[droppedNodePosition - 1].depth + 1;
+
+		nodes = updateChildren(nodes[droppedNodePosition], nodes);
 		nodesIndex = getNodesIndex(nodes);
-		nodes = nodes;
 	}
 
 	function handleInChildrenArea(event: CustomEvent<{ id: string }>) {
@@ -216,25 +256,19 @@
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
 	/>
-	<fieldset
-		style="height: {8 * nodes.length + nodes.length * 20}px"
-		class=" gap-2 relative {isDragging ? '[&>div]:brightness-75' : ''}"
-		bind:this={dragZoneHtml}
-	>
-		{#each nodes as node, idx (node.id)}
-			<div style="top: {8 * idx + idx * 20}px" class="absolute w-[90%]">
-				<Node
-					{node}
-					on:add={handleAdd}
-					on:delete={handleDelete}
-					on:dragstarted={handleDragStarted}
-					on:dragended={handleDragEnded}
-					on:dragentered={handleDragEntered}
-					on:dragleft={handleDragLeft}
-					on:dropped={handleDropped}
-					on:inchildrenarea={handleInChildrenArea}
-				/>
-			</div>
+	<fieldset class="flex flex-col gap-2 {isDragging ? '[&>div]:brightness-75' : ''}">
+		{#each nodes as node (node.id)}
+			<Node
+				{node}
+				on:add={handleAdd}
+				on:delete={handleDelete}
+				on:dragstarted={handleDragStarted}
+				on:dragended={handleDragEnded}
+				on:dragentered={handleDragEntered}
+				on:dragleft={handleDragLeft}
+				on:dropped={handleDropped}
+				on:addchild={handleAddChild}
+			/>
 		{/each}
 	</fieldset>
 </div>

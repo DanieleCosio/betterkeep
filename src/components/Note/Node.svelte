@@ -94,15 +94,20 @@
 		});
 	}
 
+<<<<<<< HEAD
 	function handleInChildrenArea(event: DragEvent) {
 		node.isHovered = false;
 		dispatch('inchildrenarea', {
+=======
+	function handleDropChild(event: DragEvent) {
+		dispatch('addchild', {
+>>>>>>> draggale
 			id: node.id
 		});
 	}
 
-	function handleMouseDown(event: MouseEvent) {
-		if (event.button !== 0) {
+	onMount(() => {
+		if (!htmlNode) {
 			return;
 		}
 
@@ -140,10 +145,15 @@
 </script>
 
 <div
-	on:mousedown|preventDefault={handleMouseDown}
-	on:mouseup={handleMouseUp}
-	bind:this={nodeHtml}
-	class="flex justify-center flex-col w-[100%]"
+	on:dragstart={handleDragStart}
+	on:dragend={handleDragEnd}
+	on:dragenter={handleDragEnter}
+	on:dragleave={handleDragLeave}
+	on:dragover|preventDefault
+	on:drop|preventDefault={handleDrop}
+	draggable="true"
+	class="flex justify-center flex-col"
+	style="padding-left: {node.depth * 20}px;"
 >
 	<div style="margin-left: {node.depth * 20}px;" class="flex gap-2">
 		<input class="w-5 h-5" type="checkbox" />
@@ -159,6 +169,6 @@
 	</div>
 
 	{#if node.isHovered}
-		<div transition:fade class="h-8 bg-lime-600" />
+		<div transition:fade class="h-8 bg-lime-600" on:drop|stopPropagation={handleDropChild} />
 	{/if}
 </div>
