@@ -94,43 +94,8 @@
 		});
 	}
 
-<<<<<<< HEAD
-	function handleInChildrenArea(event: DragEvent) {
-		node.isHovered = false;
-		dispatch('inchildrenarea', {
-=======
 	function handleDropChild(event: DragEvent) {
 		dispatch('addchild', {
->>>>>>> draggale
-			id: node.id
-		});
-	}
-
-	onMount(() => {
-		if (!htmlNode) {
-			return;
-		}
-
-		console.log('drag started!');
-
-		node.isDragging = true;
-		dispatch('dragstarted', {
-			id: node.id,
-			nodeHtml: nodeHtml,
-			position: {
-				x: event.clientX,
-				y: event.clientY
-			}
-		});
-	}
-
-	function handleMouseUp() {
-		if (!node.isDragging) {
-			return;
-		}
-
-		node.isDragging = false;
-		dispatch('dragended', {
 			id: node.id
 		});
 	}
@@ -155,7 +120,7 @@
 	class="flex justify-center flex-col"
 	style="padding-left: {node.depth * 20}px;"
 >
-	<div style="margin-left: {node.depth * 20}px;" class="flex gap-2">
+	<div class="flex gap-2">
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
