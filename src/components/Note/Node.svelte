@@ -93,6 +93,12 @@
 		});
 	}
 
+	function handleDropChild(event: DragEvent) {
+		dispatch('addchild', {
+			id: node.id
+		});
+	}
+
 	onMount(() => {
 		if (!htmlNode) {
 			return;
@@ -111,6 +117,7 @@
 	on:drop|preventDefault={handleDrop}
 	draggable="true"
 	class="flex justify-center flex-col"
+	style="padding-left: {node.depth * 20}px;"
 >
 	<div class="flex gap-2">
 		<input class="w-5 h-5" type="checkbox" />
@@ -120,13 +127,12 @@
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
-			style="padding-left: {node.depth * 20}px;"
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
 			rows="1"
 		/>
 	</div>
 
-	{#if node.isHovered || node.children.length > 0}
-		<div transition:fade class="h-8 bg-lime-600" />
+	{#if node.isHovered}
+		<div transition:fade class="h-8 bg-lime-600" on:drop|stopPropagation={handleDropChild} />
 	{/if}
 </div>

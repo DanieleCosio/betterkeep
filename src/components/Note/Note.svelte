@@ -17,7 +17,6 @@
 		}
 
 		nodes.splice(position, 1);
-		nodes.sort(compareNoteNodes.bind(nodes));
 		nodes = nodes;
 
 		nodesIndex = getNodesIndex(nodes);
@@ -99,6 +98,7 @@
 	}
 
 	function handleDropped(event: CustomEvent<{ id: string }>) {
+		console.log('handleDropped');
 		let droppedId: string = event.detail.id;
 
 		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
@@ -111,6 +111,30 @@
 		const droppedNode = nodes[droppedNodePosition];
 		nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
 		nodes.splice(draggedNodePosition, 1, droppedNode);
+
+		nodesIndex = getNodesIndex(nodes);
+		nodes = nodes;
+	}
+
+	function handleAddChild(event: CustomEvent<{ id: string }>) {
+		console.log('handleAddChild');
+		const droppedId: string = event.detail.id;
+		const droppedNodePosition = nodesIndex[droppedId];
+		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
+			nodes[droppedNodePosition].isHovered = false;
+			return;
+		}
+
+		const draggedNodePosition = nodesIndex[draggedNodeId];
+		const draggedNode = nodes[draggedNodePosition];
+
+		nodes[droppedNodePosition].isHovered = false;
+		nodes.splice(draggedNodePosition, 1);
+		nodes.splice(droppedNodePosition, 0, draggedNode);
+
+		nodes[droppedNodePosition].parent_id = droppedId;
+		nodes[droppedNodePosition].depth = nodes[droppedNodePosition].depth + 1;
+		// TODO update childs depth and position
 
 		nodesIndex = getNodesIndex(nodes);
 		nodes = nodes;
@@ -135,6 +159,7 @@
 				on:dragentered={handleDragEntered}
 				on:dragleft={handleDragLeft}
 				on:dropped={handleDropped}
+				on:addchild={handleAddChild}
 			/>
 		{/each}
 	</fieldset>
