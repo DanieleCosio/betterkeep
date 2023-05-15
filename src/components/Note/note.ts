@@ -27,8 +27,33 @@ export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 	const nodesIndex: { [key: string]: number } = {};
 
 	for (let i = 0; i < nodes.length; i++) {
+		nodes[i].order = i;
 		nodesIndex[nodes[i].id] = i;
 	}
 
 	return nodesIndex;
+}
+
+export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
+	const children = nodes.filter((element) => element.parent_id === node.id);
+	if (!children.length) {
+		return nodes;
+	}
+
+	children.sort(compareNoteNodes.bind(children));
+	let nodeIndex = getNodesIndex(nodes);
+	for (const child of children) {
+		child.depth = node.depth + 1;
+		nodes.splice(nodeIndex[child.id], 1);
+	}
+
+	nodeIndex = getNodesIndex(nodes);
+	const parentPosition = nodeIndex[node.id];
+	nodes.splice(parentPosition + 1, 0, ...children);
+
+	for (const child of children) {
+		updateChildren(child, nodes);
+	}
+
+	return nodes;
 }

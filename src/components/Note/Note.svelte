@@ -2,7 +2,7 @@
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { compareNoteNodes, getNodesIndex } from './note';
+	import { compareNoteNodes, getNodesIndex, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -107,13 +107,30 @@
 
 		const draggedNodePosition = nodesIndex[draggedNodeId];
 		const droppedNodePosition = nodesIndex[droppedId];
-
 		const droppedNode = nodes[droppedNodePosition];
-		nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
-		nodes.splice(draggedNodePosition, 1, droppedNode);
+		let tmpNodes = nodes;
 
-		nodesIndex = getNodesIndex(nodes);
-		nodes = nodes;
+		const swap = nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id;
+		if (swap) {
+			const droppedNode = nodes[droppedNodePosition];
+			nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
+			nodes.splice(draggedNodePosition, 1, droppedNode);
+			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
+		} else {
+			const draggedNodePosition = nodesIndex[draggedNodeId];
+			const draggedNode = nodes[draggedNodePosition];
+
+			nodes[droppedNodePosition].isHovered = false;
+			nodes.splice(draggedNodePosition, 1);
+			nodes.splice(droppedNodePosition - 1, 0, draggedNode); // !!!
+			nodes[droppedNodePosition - 1].depth = droppedNode.depth;
+			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
+		}
+
+		nodesIndex = getNodesIndex(tmpNodes);
+		nodes = tmpNodes;
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
@@ -133,11 +150,10 @@
 		nodes.splice(droppedNodePosition, 0, draggedNode);
 
 		nodes[droppedNodePosition].parent_id = droppedId;
-		nodes[droppedNodePosition].depth = nodes[droppedNodePosition].depth + 1;
-		// TODO update childs depth and position
+		nodes[droppedNodePosition].depth = nodes[droppedNodePosition - 1].depth + 1;
 
+		nodes = updateChildren(nodes[droppedNodePosition], nodes);
 		nodesIndex = getNodesIndex(nodes);
-		nodes = nodes;
 	}
 </script>
 
