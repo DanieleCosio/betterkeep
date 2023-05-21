@@ -13,6 +13,7 @@
 		isHovered: false,
 		isFocused: false,
 		isDragging: false,
+		isVisible: true,
 		depth: 0
 	};
 
@@ -117,7 +118,7 @@
 	on:dragover|preventDefault
 	on:drop|preventDefault={handleDrop}
 	draggable="true"
-	class="flex justify-center flex-col"
+	class="flex justify-center flex-col {!node.isVisible ? 'hidden' : ''}"
 	style="padding-left: {node.depth * 20}px;"
 >
 	<div class="flex gap-2">

@@ -1,5 +1,4 @@
 import type NoteNode from '$types/NoteNode';
-import type Rect from '$types/Rect';
 
 export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): number {
 	if (a.parent_id === b.parent_id) {
@@ -40,17 +39,18 @@ export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 }
 
 export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
-	const children = nodes.filter((element) => element.parent_id === node.id);
+	let children = nodes.filter((element) => element.parent_id === node.id);
 	if (!children.length) {
 		return nodes;
 	}
 
 	children.sort(compareNoteNodes.bind(children));
 	let nodeIndex = getNodesIndex(nodes);
-	for (const child of children) {
-		child.depth = node.depth + 1;
+	children = children.map((child) => {
 		nodes.splice(nodeIndex[child.id], 1);
-	}
+		child.depth = node.depth + 1;
+		return child;
+	});
 
 	nodeIndex = getNodesIndex(nodes);
 	const parentPosition = nodeIndex[node.id];

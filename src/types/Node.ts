@@ -3,6 +3,7 @@ interface NodeProps {
 	isHovered: boolean;
 	isFocused: boolean;
 	isDragging: boolean;
+	isVisible: boolean;
 	depth: number;
 }
 

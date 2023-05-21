@@ -1,10 +1,9 @@
 <script lang="ts">
+	// TODO: Fix bugs
 	import type NoteNode from '$types/NoteNode';
-	import type Rect from '$types/Rect';
-	import { debug } from 'svelte/internal';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { compareNoteNodes, getNodesIndex, updateChildren } from './note';
+	import { /* compareNoteNodes, */ getChildrenNodes, getNodesIndex, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -13,7 +12,7 @@
 	let noteHtml: HTMLDivElement | undefined = undefined;
 	let draggedNodeHtml: HTMLDivElement | undefined = undefined;
 	let draggedPosition: { x: number; y: number } | undefined = undefined;
-	let dragZoneHtml: HTMLFieldSetElement | undefined = undefined;
+	/* let dragZoneHtml: HTMLFieldSetElement | undefined = undefined; */
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
@@ -45,7 +44,7 @@
 				isHovered: false,
 				isFocused: false,
 				isDragging: false,
-
+				isVisible: true,
 				depth: 0,
 				parent_id: null,
 				order: 0
@@ -62,6 +61,7 @@
 			isHovered: false,
 			isFocused: false,
 			isDragging: false,
+			isVisible: true,
 			depth: 0,
 			parent_id: null,
 			order: nodes[nodesIndex[event.detail.id]].order + 1
@@ -82,6 +82,14 @@
 		draggedNodeId = event.detail.id;
 		draggedNodeHtml = event.detail.nodeHtml;
 		draggedPosition = event.detail.position;
+
+		// Hide all children
+		const children = getChildrenNodes(nodes, draggedNodeId);
+		for (const child of children) {
+			nodes[nodesIndex[child.id]].isVisible = false;
+		}
+
+		nodes = nodes;
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
@@ -89,6 +97,12 @@
 		draggedNodeId = undefined;
 		draggedPosition = undefined;
 		draggedNodeHtml = undefined;
+
+		for (const node of nodes) {
+			node.isVisible = true;
+		}
+
+		nodes = nodes;
 	}
 
 	function handleDragEntered(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
@@ -126,17 +140,14 @@
 			nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
 			nodes.splice(draggedNodePosition, 1, droppedNode);
 			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
-			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
 		} else {
 			const draggedNodePosition = nodesIndex[draggedNodeId];
 			const draggedNode = nodes[draggedNodePosition];
-
 			nodes[droppedNodePosition].isHovered = false;
 			nodes.splice(draggedNodePosition, 1);
-			nodes.splice(droppedNodePosition - 1, 0, draggedNode); // !!!
+			nodes.splice(droppedNodePosition - 1, 0, draggedNode);
 			nodes[droppedNodePosition - 1].depth = droppedNode.depth;
 			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
-			tmpNodes = updateChildren(nodes[draggedNodePosition], tmpNodes);
 		}
 
 		nodesIndex = getNodesIndex(tmpNodes);
