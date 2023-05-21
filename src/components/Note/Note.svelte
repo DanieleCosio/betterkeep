@@ -3,7 +3,7 @@
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { /* compareNoteNodes, */ getChildrenNodes, getNodesIndex, updateChildren } from './note';
+	import { getChildrenNodes, getNodesIndex, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -12,7 +12,6 @@
 	let noteHtml: HTMLDivElement | undefined = undefined;
 	let draggedNodeHtml: HTMLDivElement | undefined = undefined;
 	let draggedPosition: { x: number; y: number } | undefined = undefined;
-	/* let dragZoneHtml: HTMLFieldSetElement | undefined = undefined; */
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
@@ -152,12 +151,14 @@
 
 		nodesIndex = getNodesIndex(tmpNodes);
 		nodes = tmpNodes;
+
+		handleDragEnded(event);
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
 		console.log('handleAddChild');
 		const droppedId: string = event.detail.id;
-		const droppedNodePosition = nodesIndex[droppedId];
+		let droppedNodePosition = nodesIndex[droppedId];
 		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
 			nodes[droppedNodePosition].isHovered = false;
 			return;
@@ -165,16 +166,22 @@
 
 		const draggedNodePosition = nodesIndex[draggedNodeId];
 		const draggedNode = nodes[draggedNodePosition];
+		if (draggedNodePosition > droppedNodePosition) {
+			droppedNodePosition += 1;
+		}
 
 		nodes[droppedNodePosition].isHovered = false;
 		nodes.splice(draggedNodePosition, 1);
 		nodes.splice(droppedNodePosition, 0, draggedNode);
 
 		nodes[droppedNodePosition].parent_id = droppedId;
-		nodes[droppedNodePosition].depth = nodes[droppedNodePosition - 1].depth + 1;
+		nodesIndex = getNodesIndex(nodes);
+		nodes[droppedNodePosition].depth = nodes[nodesIndex[droppedId]].depth + 1;
 
 		nodes = updateChildren(nodes[droppedNodePosition], nodes);
 		nodesIndex = getNodesIndex(nodes);
+
+		handleDragEnded(event);
 	}
 </script>
 

@@ -49,6 +49,7 @@ export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
 	children = children.map((child) => {
 		nodes.splice(nodeIndex[child.id], 1);
 		child.depth = node.depth + 1;
+		nodeIndex = getNodesIndex(nodes);
 		return child;
 	});
 
