@@ -3,7 +3,7 @@
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { getChildrenNodes, getNodesIndex, updateChildren } from './note';
+	import { getChildrenNodesRecursive, getNodesIndex, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -83,7 +83,7 @@
 		draggedPosition = event.detail.position;
 
 		// Hide all children
-		const children = getChildrenNodes(nodes, draggedNodeId);
+		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
 		for (const child of children) {
 			nodes[nodesIndex[child.id]].isVisible = false;
 		}

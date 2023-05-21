@@ -27,6 +27,17 @@ export function getChildrenNodes(nodes: NoteNode[], id: string | undefined): Not
 	return nodes.filter((element) => element.parent_id === id);
 }
 
+export function getChildrenNodesRecursive(nodes: NoteNode[], id: string | undefined): NoteNode[] {
+	const children = getChildrenNodes(nodes, id);
+	if (!children.length) {
+		return [];
+	}
+
+	return children.concat(
+		children.map((child) => getChildrenNodesRecursive(nodes, child.id)).flat()
+	);
+}
+
 export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 	const nodesIndex: { [key: string]: number } = {};
 
