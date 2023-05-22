@@ -50,13 +50,13 @@ export function getNodesIndex(nodes: NoteNode[]): { [key: string]: number } {
 }
 
 export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
+	let nodeIndex = getNodesIndex(nodes);
 	let children = nodes.filter((element) => element.parent_id === node.id);
 	if (!children.length) {
 		return nodes;
 	}
 
 	children.sort(compareNoteNodes.bind(children));
-	let nodeIndex = getNodesIndex(nodes);
 	children = children.map((child) => {
 		nodes.splice(nodeIndex[child.id], 1);
 		child.depth = node.depth + 1;
@@ -72,5 +72,11 @@ export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
 		updateChildren(child, nodes);
 	}
 
+	return nodes;
+}
+
+export function removeNode(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
+	const index = nodes.findIndex((element) => element.id === node.id);
+	nodes.splice(index, 1);
 	return nodes;
 }

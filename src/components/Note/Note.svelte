@@ -1,9 +1,10 @@
 <script lang="ts">
 	// TODO: Fix bugs
+	// TODO Il child dropped on parent?
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { getChildrenNodesRecursive, getNodesIndex, updateChildren } from './note';
+	import { getChildrenNodesRecursive, getNodesIndex, removeNode, updateChildren } from './note';
 
 	export let nodes: NoteNode[] = [];
 	let nodesIndex: { [key: string]: number } = {};
@@ -121,7 +122,6 @@
 	}
 
 	function handleDropped(event: CustomEvent<{ id: string }>) {
-		console.log('handleDropped');
 		let droppedId: string = event.detail.id;
 
 		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
@@ -129,24 +129,29 @@
 		}
 
 		const draggedNodePosition = nodesIndex[draggedNodeId];
-		const droppedNodePosition = nodesIndex[droppedId];
+		let droppedNodePosition = nodesIndex[droppedId];
 		const droppedNode = nodes[droppedNodePosition];
+		const draggedNode = nodes[draggedNodePosition];
 		let tmpNodes = nodes;
 
-		const swap = nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id;
-		if (swap) {
+		if (nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id) {
 			const droppedNode = nodes[droppedNodePosition];
 			nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
 			nodes.splice(draggedNodePosition, 1, droppedNode);
-			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			tmpNodes = updateChildren(droppedNode, nodes);
+			tmpNodes = updateChildren(draggedNode, tmpNodes);
 		} else {
-			const draggedNodePosition = nodesIndex[draggedNodeId];
-			const draggedNode = nodes[draggedNodePosition];
-			nodes[droppedNodePosition].isHovered = false;
+			if (draggedNodePosition < droppedNodePosition) {
+				droppedNodePosition -= 1;
+			}
+
 			nodes.splice(draggedNodePosition, 1);
-			nodes.splice(droppedNodePosition - 1, 0, draggedNode);
-			nodes[droppedNodePosition - 1].depth = droppedNode.depth;
-			tmpNodes = updateChildren(nodes[droppedNodePosition], nodes);
+			nodes.splice(droppedNodePosition, 0, draggedNode);
+			nodes[droppedNodePosition].parent_id = droppedNode.parent_id;
+			nodes[droppedNodePosition].depth = droppedNode.depth;
+
+			tmpNodes = updateChildren(droppedNode, nodes);
+			tmpNodes = updateChildren(draggedNode, tmpNodes);
 		}
 
 		nodesIndex = getNodesIndex(tmpNodes);
@@ -156,7 +161,6 @@
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
-		console.log('handleAddChild');
 		const droppedId: string = event.detail.id;
 		let droppedNodePosition = nodesIndex[droppedId];
 		if (droppedId === draggedNodeId || draggedNodeId === undefined) {

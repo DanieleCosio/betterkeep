@@ -81,6 +81,10 @@
 			return;
 		}
 
+		dragCounter = 0;
+
+		console.log('dragleave');
+
 		node.isHovered = false;
 		dispatch('dragleft', {
 			id: node.id,
