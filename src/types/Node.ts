@@ -5,6 +5,7 @@ interface NodeProps {
 	isDragging: boolean;
 	isVisible: boolean;
 	depth: number;
+	html?: HTMLElement;
 }
 
 export default NodeProps;

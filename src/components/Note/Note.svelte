@@ -196,7 +196,9 @@
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
 	/>
-	<fieldset class="flex flex-col gap-2 {isDragging ? '[&>div]:brightness-75' : ''}">
+	<fieldset
+		class="flex flex-col gap-2 relative h-[500px] {isDragging ? '[&>div]:brightness-75' : ''}"
+	>
 		{#each nodes as node (node.id)}
 			<Node
 				{node}

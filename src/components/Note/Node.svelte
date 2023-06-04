@@ -3,20 +3,24 @@
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { moveAt } from './node';
+	import type Point from '$types/Point';
 
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
-	let nodeHtml: HTMLDivElement | undefined = undefined;
-	const dispatch = createEventDispatcher();
-
+	const previousPosition: Point = { x: 0, y: 0 };
+	let parentRect: DOMRect;
+	let nodeRect: DOMRect;
 	export let node: NodeProps = {
 		id: getRandomString(8),
 		isHovered: false,
 		isFocused: false,
 		isDragging: false,
 		isVisible: true,
-		depth: 0
+		depth: 0,
+		html: undefined
 	};
 
+	const dispatch = createEventDispatcher();
 	function handleFocus() {
 		node.isFocused = true;
 	}
@@ -49,6 +53,82 @@
 		}
 	}
 
+	function handleMouseDown(event: MouseEvent) {
+		if (!node.html) {
+			return;
+		}
+
+		const parent = node.html.parentElement;
+		if (!parent) {
+			return;
+		}
+
+		nodeRect = node.html.getBoundingClientRect();
+		parentRect = parent.getBoundingClientRect();
+
+		dispatch('dragstarted', {
+			id: node.id,
+			nodeHtml: node.html
+		});
+
+		node.isDragging = true;
+		node.html.style.position = 'absolute';
+		node.html.style.zIndex = '1000';
+		previousPosition.x = event.clientX;
+		previousPosition.y = event.clientY;
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+	}
+
+	function handleMouseMove(event: MouseEvent) {
+		if (!node.html || !node.isDragging) {
+			return;
+		}
+
+		const delta: Point = {
+			x: previousPosition.x - event.clientX,
+			y: previousPosition.y - event.clientY
+		};
+		let y = node.html.offsetTop - delta.y;
+
+		if (event.clientY + nodeRect.height >= parentRect.bottom) {
+			y = parentRect.height - nodeRect.height;
+		}
+
+		if (event.clientY <= parentRect.top) {
+			y = 0;
+		}
+
+		node.html.style.top = `${y}px`;
+		previousPosition.x = event.clientX;
+		previousPosition.y = event.clientY;
+	}
+
+	function handleMouseUp(event: MouseEvent) {
+		if (!node.html || !node.isDragging) {
+			return;
+		}
+		const parent = node.html.parentElement;
+		if (!parent) {
+			return;
+		}
+
+		node.isDragging = false;
+		node.html.style.position = 'static';
+		node.html.style.zIndex = '0';
+		node.html.style.top = '0';
+		node.html.style.left = '0';
+
+		dispatch('dragended', {
+			id: node.id
+		});
+
+		parent.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	}
+
+	/* 
 	function handleDragStart(event: DragEvent) {
 		node.isDragging = true;
 		dispatch('dragstarted', {
@@ -103,7 +183,8 @@
 		dispatch('addchild', {
 			id: node.id
 		});
-	}
+	} 
+*/
 
 	onMount(() => {
 		if (!textAreaHtml) {
@@ -115,17 +196,12 @@
 </script>
 
 <div
-	on:dragstart={handleDragStart}
-	on:dragend={handleDragEnd}
-	on:dragenter={handleDragEnter}
-	on:dragleave={handleDragLeave}
-	on:dragover|preventDefault
-	on:drop|preventDefault={handleDrop}
-	draggable="true"
-	class="flex justify-center flex-col {!node.isVisible ? 'hidden' : ''}"
-	style="padding-left: {node.depth * 20}px;"
+	on:dragstart|preventDefault
+	bind:this={node.html}
+	class="flex justify-center flex-col w-[280px] {!node.isVisible ? 'hidden' : ''}"
 >
 	<div class="flex gap-2">
+		<span on:mousedown={handleMouseDown}>⋮</span>
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
@@ -139,6 +215,6 @@
 	</div>
 
 	{#if node.isHovered}
-		<div transition:fade class="h-8 bg-lime-600" on:drop|stopPropagation={handleDropChild} />
+		<div transition:fade class="h-8 bg-lime-600" />
 	{/if}
 </div>
