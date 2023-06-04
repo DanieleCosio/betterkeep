@@ -1,18 +1,23 @@
 <script lang="ts">
-	// TODO: Fix bugs
-	// TODO Il child dropped on parent?
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
-	import { getChildrenNodesRecursive, getNodesIndex, removeNode, updateChildren } from './note';
+	import {
+		getChildrenNodesRecursive,
+		getNewNodePosition,
+		getNodesIndex,
+		removeNode,
+		updateChildren
+	} from './note';
+
+	const NODE_HEIGHT = 24;
+	const NODE_PADDING = 8;
 
 	export let nodes: NoteNode[] = [];
+	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
 	let nodesIndex: { [key: string]: number } = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
-	let noteHtml: HTMLDivElement | undefined = undefined;
-	let draggedNodeHtml: HTMLDivElement | undefined = undefined;
-	let draggedPosition: { x: number; y: number } | undefined = undefined;
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
@@ -47,7 +52,8 @@
 				isVisible: true,
 				depth: 0,
 				parent_id: null,
-				order: 0
+				order: 0,
+				height: NODE_HEIGHT
 			},
 			...nodes
 		];
@@ -55,7 +61,33 @@
 		nodesIndex = getNodesIndex(nodes);
 	}
 
+	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
+		const id: string = event.detail.id;
+		const difference: number = event.detail.difference;
+
+		const position = nodesIndex[id];
+		if (position === undefined || !nodesContainer) {
+			return;
+		}
+
+		for (let i = position + 1; i < nodes.length; i++) {
+			nodes[i].top = nodes[i].top + difference;
+		}
+
+		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
+		nodesContainer.style.height = `${newHeight}px`;
+
+		nodes = nodes;
+		//nodesIndex = getNodesIndex(nodes);
+	}
+
 	function handleAdd(event: CustomEvent<{ id: string }>) {
+		if (!nodesContainer) {
+			return;
+		}
+
+		const top = getNewNodePosition(nodes, NODE_PADDING);
+
 		nodes.splice(nodesIndex[event.detail.id] + 1, 0, {
 			id: getRandomString(8),
 			isHovered: false,
@@ -64,12 +96,16 @@
 			isVisible: true,
 			depth: 0,
 			parent_id: null,
-			order: nodes[nodesIndex[event.detail.id]].order + 1
+			order: nodes[nodesIndex[event.detail.id]].order + 1,
+			height: NODE_HEIGHT,
+			top: top
 		});
 
 		for (let i = nodesIndex[event.detail.id] + 2; i < nodes.length; i++) {
 			nodes[i].order = nodes[i].order + 1;
 		}
+
+		nodesContainer.style.height = `${top}px`;
 
 		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
@@ -80,8 +116,6 @@
 	) {
 		isDragging = true;
 		draggedNodeId = event.detail.id;
-		draggedNodeHtml = event.detail.nodeHtml;
-		draggedPosition = event.detail.position;
 
 		// Hide all children
 		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
@@ -95,8 +129,6 @@
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
 		draggedNodeId = undefined;
-		draggedPosition = undefined;
-		draggedNodeHtml = undefined;
 
 		for (const node of nodes) {
 			node.isVisible = true;
@@ -189,7 +221,7 @@
 	}
 </script>
 
-<div bind:this={noteHtml} class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
+<div class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
 	<input
 		type="text"
 		placeholder="Titolo"
@@ -197,7 +229,12 @@
 		on:keyup={handleTitleKeyUp}
 	/>
 	<fieldset
-		class="flex flex-col gap-2 relative h-[500px] {isDragging ? '[&>div]:brightness-75' : ''}"
+		bind:this={nodesContainer}
+		class="
+			relative
+			{`gap-[${NODE_PADDING}px]`} 
+			{isDragging ? '[&>div]:brightness-75' : ''}
+		"
 	>
 		{#each nodes as node (node.id)}
 			<Node
@@ -210,6 +247,7 @@
 				on:dragleft={handleDragLeft}
 				on:dropped={handleDropped}
 				on:addchild={handleAddChild}
+				on:resized={handleResized}
 			/>
 		{/each}
 	</fieldset>

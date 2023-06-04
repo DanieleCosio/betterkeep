@@ -3,7 +3,6 @@
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { moveAt } from './node';
 	import type Point from '$types/Point';
 
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
@@ -17,7 +16,9 @@
 		isDragging: false,
 		isVisible: true,
 		depth: 0,
-		html: undefined
+		html: undefined,
+		height: 24,
+		top: 0
 	};
 
 	const dispatch = createEventDispatcher();
@@ -39,8 +40,23 @@
 			return;
 		}
 
+		const height = parseInt(textAreaHtml.style.height, 10);
+
 		textAreaHtml.style.height = 'auto';
 		textAreaHtml.style.height = textAreaHtml.scrollHeight + 'px';
+
+		if (height === textAreaHtml.scrollHeight) {
+			console.log('height is the same');
+			return;
+		}
+
+		console.log('height is different');
+
+		const difference = textAreaHtml.scrollHeight - height;
+		dispatch('resized', {
+			id: node.id,
+			difference: difference
+		});
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -72,7 +88,6 @@
 		});
 
 		node.isDragging = true;
-		node.html.style.position = 'absolute';
 		node.html.style.zIndex = '1000';
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
@@ -100,7 +115,7 @@
 			y = 0;
 		}
 
-		node.html.style.top = `${y}px`;
+		node.top = y;
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
 	}
@@ -115,9 +130,7 @@
 		}
 
 		node.isDragging = false;
-		node.html.style.position = 'static';
 		node.html.style.zIndex = '0';
-		node.html.style.top = '0';
 		node.html.style.left = '0';
 
 		dispatch('dragended', {
@@ -198,7 +211,12 @@
 <div
 	on:dragstart|preventDefault
 	bind:this={node.html}
-	class="flex justify-center flex-col w-[280px] {!node.isVisible ? 'hidden' : ''}"
+	style="top:{node.top}px"
+	class="
+		flex justify-center flex-col absolute left-0 w-100
+		{`h-[${node.height}px]`} 
+	 	{!node.isVisible ? 'hidden' : ''}
+	"
 >
 	<div class="flex gap-2">
 		<span on:mousedown={handleMouseDown}>⋮</span>

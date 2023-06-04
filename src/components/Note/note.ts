@@ -80,3 +80,14 @@ export function removeNode(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
 	nodes.splice(index, 1);
 	return nodes;
 }
+
+export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): number {
+	let sum = 0;
+	for (const node of nodes) {
+		if (node.html) {
+			sum += node.html?.clientHeight;
+		}
+	}
+	sum += nodePadding * nodes.length - 1;
+	return sum;
+}
