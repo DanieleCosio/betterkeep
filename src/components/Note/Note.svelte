@@ -1,11 +1,15 @@
 <script lang="ts">
+	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import {
+		computeDrop,
+		computeNodesPositions,
 		getChildrenNodesRecursive,
 		getNewNodePosition,
 		getNodesIndex,
+		getNodesPositionIndex,
 		removeNode,
 		updateChildren
 	} from './note';
@@ -15,7 +19,8 @@
 
 	export let nodes: NoteNode[] = [];
 	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
-	let nodesIndex: { [key: string]: number } = {};
+	let nodesIndex: NodesIndex = {};
+	let nodesPositionIndex: Map<number, number> = new Map();
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
 
@@ -43,6 +48,7 @@
 			}
 		}
 
+		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [
 			{
 				id: getRandomString(8),
@@ -53,7 +59,8 @@
 				depth: 0,
 				parent_id: null,
 				order: 0,
-				height: NODE_HEIGHT
+				height: NODE_HEIGHT,
+				top: top
 			},
 			...nodes
 		];
@@ -78,7 +85,6 @@
 		nodesContainer.style.height = `${newHeight}px`;
 
 		nodes = nodes;
-		//nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleAdd(event: CustomEvent<{ id: string }>) {
@@ -124,72 +130,52 @@
 		}
 
 		nodes = nodes;
+
+		// Create nodes position index
+		nodesPositionIndex = getNodesPositionIndex(nodes);
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
-		draggedNodeId = undefined;
 
-		for (const node of nodes) {
-			node.isVisible = true;
-		}
-
-		nodes = nodes;
-	}
-
-	function handleDragEntered(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
-		if (!event.detail.htmlNode || !event.detail.htmlNode.parentElement) {
-			return;
-		}
-
-		event.detail.htmlNode.classList.add('!brightness-100');
-	}
-
-	function handleDragLeft(event: CustomEvent<{ id: string; htmlNode: HTMLTextAreaElement }>) {
-		if (!event.detail.htmlNode || !event.detail.htmlNode.parentElement) {
-			return;
-		}
-
-		event.detail.htmlNode.classList.remove('!brightness-100');
-	}
-
-	function handleDropped(event: CustomEvent<{ id: string }>) {
-		let droppedId: string = event.detail.id;
-
-		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
-			return;
-		}
-
-		const draggedNodePosition = nodesIndex[draggedNodeId];
-		let droppedNodePosition = nodesIndex[droppedId];
-		const droppedNode = nodes[droppedNodePosition];
-		const draggedNode = nodes[draggedNodePosition];
+		// TODO Check for hovered items and update nodes
 		let tmpNodes = nodes;
+		const hoveredNode = nodes.find((node) => node.isHovered);
+		if (hoveredNode) {
+			tmpNodes = computeDrop(hoveredNode.id, event.detail.id, tmpNodes, nodesIndex);
+			tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING);
+		}
 
-		if (nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id) {
-			const droppedNode = nodes[droppedNodePosition];
-			nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
-			nodes.splice(draggedNodePosition, 1, droppedNode);
-			tmpNodes = updateChildren(droppedNode, nodes);
-			tmpNodes = updateChildren(draggedNode, tmpNodes);
-		} else {
-			if (draggedNodePosition < droppedNodePosition) {
-				droppedNodePosition -= 1;
-			}
-
-			nodes.splice(draggedNodePosition, 1);
-			nodes.splice(droppedNodePosition, 0, draggedNode);
-			nodes[droppedNodePosition].parent_id = droppedNode.parent_id;
-			nodes[droppedNodePosition].depth = droppedNode.depth;
-
-			tmpNodes = updateChildren(droppedNode, nodes);
-			tmpNodes = updateChildren(draggedNode, tmpNodes);
+		draggedNodeId = undefined;
+		for (const node of tmpNodes) {
+			node.isVisible = true;
+			node.isHovered = false;
 		}
 
 		nodesIndex = getNodesIndex(tmpNodes);
 		nodes = tmpNodes;
+	}
 
-		handleDragEnded(event);
+	function handleDragged(event: CustomEvent<{ id: string }>) {
+		const draggedNode = nodes[nodesIndex[event.detail.id]];
+		if (draggedNode.html === undefined) {
+			return;
+		}
+
+		const draggedNodePosition = parseInt(draggedNode.html.style.top, 10);
+		const index = Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate heigh in not constant
+
+		for (const node of nodes) {
+			node.isHovered = false;
+		}
+
+		if (!nodes[index]) {
+			return;
+		}
+
+		nodes[index].isHovered = true;
+		nodesIndex = getNodesIndex(nodes);
+		nodes = nodes;
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
@@ -237,7 +223,7 @@
 		"
 	>
 		{#each nodes as node (node.id)}
-			<Node
+			<!-- <Node
 				{node}
 				on:add={handleAdd}
 				on:delete={handleDelete}
@@ -247,6 +233,16 @@
 				on:dragleft={handleDragLeft}
 				on:dropped={handleDropped}
 				on:addchild={handleAddChild}
+				on:resized={handleResized}
+			/> -->
+
+			<Node
+				{node}
+				on:add={handleAdd}
+				on:delete={handleDelete}
+				on:dragstarted={handleDragStarted}
+				on:dragended={handleDragEnded}
+				on:dragged={handleDragged}
 				on:resized={handleResized}
 			/>
 		{/each}

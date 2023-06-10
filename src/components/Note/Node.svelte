@@ -118,6 +118,10 @@
 		node.top = y;
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
+
+		dispatch('dragged', {
+			id: node.id
+		});
 	}
 
 	function handleMouseUp(event: MouseEvent) {
@@ -216,6 +220,7 @@
 		flex justify-center flex-col absolute left-0 w-100
 		{`h-[${node.height}px]`} 
 	 	{!node.isVisible ? 'hidden' : ''}
+		{node.isHovered ? '!brightness-100' : ''}
 	"
 >
 	<div class="flex gap-2">
@@ -232,7 +237,7 @@
 		/>
 	</div>
 
-	{#if node.isHovered}
+	<!-- {#if node.isHovered}
 		<div transition:fade class="h-8 bg-lime-600" />
-	{/if}
+	{/if} -->
 </div>
