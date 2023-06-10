@@ -9,11 +9,10 @@
 	const previousPosition: Point = { x: 0, y: 0 };
 	let parentRect: DOMRect;
 	let nodeRect: DOMRect;
+	let isDragging: boolean = false;
 	export let node: NodeProps = {
 		id: getRandomString(8),
 		isHovered: false,
-		isFocused: false,
-		isDragging: false,
 		isVisible: true,
 		depth: 0,
 		html: undefined,
@@ -22,10 +21,6 @@
 	};
 
 	const dispatch = createEventDispatcher();
-	function handleFocus() {
-		node.isFocused = true;
-	}
-
 	function handleBlur() {
 		node.isHovered = false;
 		if (textAreaHtml?.value === '') {
@@ -87,7 +82,7 @@
 			nodeHtml: node.html
 		});
 
-		node.isDragging = true;
+		isDragging = true;
 		node.html.style.zIndex = '1000';
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
@@ -97,7 +92,7 @@
 	}
 
 	function handleMouseMove(event: MouseEvent) {
-		if (!node.html || !node.isDragging) {
+		if (!node.html || !isDragging) {
 			return;
 		}
 
@@ -125,7 +120,7 @@
 	}
 
 	function handleMouseUp(event: MouseEvent) {
-		if (!node.html || !node.isDragging) {
+		if (!node.html || !isDragging) {
 			return;
 		}
 		const parent = node.html.parentElement;
@@ -133,7 +128,7 @@
 			return;
 		}
 
-		node.isDragging = false;
+		isDragging = false;
 		node.html.style.zIndex = '0';
 		node.html.style.left = '0';
 
@@ -144,64 +139,6 @@
 		parent.removeEventListener('mousemove', handleMouseMove);
 		document.removeEventListener('mouseup', handleMouseUp);
 	}
-
-	/* 
-	function handleDragStart(event: DragEvent) {
-		node.isDragging = true;
-		dispatch('dragstarted', {
-			id: node.id,
-			nodeHtml: nodeHtml
-		});
-	}
-
-	function handleDragEnd(event: DragEvent) {
-		node.isDragging = false;
-		dispatch('dragended', {
-			id: node.id
-		});
-	}
-
-	let dragCounter = 0;
-	function handleDragEnter(event: DragEvent) {
-		dragCounter++;
-		node.isHovered = true;
-
-		dispatch('dragentered', {
-			id: node.id,
-			htmlNode: textAreaHtml?.parentElement?.parentElement ?? undefined
-		});
-	}
-
-	function handleDragLeave(event: DragEvent) {
-		dragCounter--;
-		if (dragCounter > 0) {
-			return;
-		}
-
-		dragCounter = 0;
-
-		console.log('dragleave');
-
-		node.isHovered = false;
-		dispatch('dragleft', {
-			id: node.id,
-			htmlNode: textAreaHtml?.parentElement?.parentElement ?? undefined
-		});
-	}
-
-	function handleDrop(event: DragEvent) {
-		node.isHovered = false;
-		dispatch('dropped', {
-			id: node.id
-		});
-	}
-
-	function handleDropChild(event: DragEvent) {
-		dispatch('addchild', {
-			id: node.id
-		});
-	} 
-*/
 
 	onMount(() => {
 		if (!textAreaHtml) {
@@ -228,7 +165,6 @@
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
-			on:focus={handleFocus}
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}

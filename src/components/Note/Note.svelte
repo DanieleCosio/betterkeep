@@ -10,7 +10,6 @@
 		getNewNodePosition,
 		getNodesIndex,
 		getNodesPositionIndex,
-		removeNode,
 		updateChildren
 	} from './note';
 
@@ -53,8 +52,6 @@
 			{
 				id: getRandomString(8),
 				isHovered: false,
-				isFocused: false,
-				isDragging: false,
 				isVisible: true,
 				depth: 0,
 				parent_id: null,
@@ -97,8 +94,6 @@
 		nodes.splice(nodesIndex[event.detail.id] + 1, 0, {
 			id: getRandomString(8),
 			isHovered: false,
-			isFocused: false,
-			isDragging: false,
 			isVisible: true,
 			depth: 0,
 			parent_id: null,
