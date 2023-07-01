@@ -2,7 +2,6 @@
 	import { getRandomString } from '../utils';
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import type Point from '$types/Point';
 
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
@@ -41,11 +40,8 @@
 		textAreaHtml.style.height = textAreaHtml.scrollHeight + 'px';
 
 		if (height === textAreaHtml.scrollHeight) {
-			console.log('height is the same');
 			return;
 		}
-
-		console.log('height is different');
 
 		const difference = textAreaHtml.scrollHeight - height;
 		dispatch('resized', {
@@ -172,8 +168,4 @@
 			rows="1"
 		/>
 	</div>
-
-	<!-- {#if node.isHovered}
-		<div transition:fade class="h-8 bg-lime-600" />
-	{/if} -->
 </div>

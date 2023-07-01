@@ -85,12 +85,13 @@ export function removeNode(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
 
 export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): number {
 	let sum = 0;
-	for (const node of nodes) {
-		if (node.html) {
-			sum += node.html?.clientHeight;
+	if (nodes.length > 0) {
+		for (const node of nodes) {
+			sum += node.html ? node.html.clientHeight : nodeHeight;
 		}
+		sum += nodePadding * nodes.length - 1;
 	}
-	sum += nodePadding * nodes.length - 1;
+
 	return sum;
 }
 
@@ -104,9 +105,17 @@ export function getNodesPositionIndex(nodes: NoteNode[]): Map<number, number> {
 	return nodesIndex;
 }
 
-export function computeNodesPositions(nodes: NoteNode[], nodePadding: number): NoteNode[] {
+export function computeNodesPositions(
+	nodes: NoteNode[],
+	nodePadding: number,
+	excludeList: string[] = []
+): NoteNode[] {
 	// L'array passato deve essere ordinato
 	for (let i = 0; i < nodes.length; i++) {
+		if (excludeList && excludeList.includes(nodes[i].id)) {
+			continue;
+		}
+
 		nodes[i].top = getNewNodePosition(nodes.slice(0, i), nodePadding);
 	}
 

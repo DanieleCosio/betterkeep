@@ -9,7 +9,6 @@
 		getChildrenNodesRecursive,
 		getNewNodePosition,
 		getNodesIndex,
-		getNodesPositionIndex,
 		updateChildren
 	} from './note';
 
@@ -19,25 +18,27 @@
 	export let nodes: NoteNode[] = [];
 	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
 	let nodesIndex: NodesIndex = {};
-	let nodesPositionIndex: Map<number, number> = new Map();
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
 
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
 		const position = nodesIndex[id];
-		if (position === undefined) {
+		if (position === undefined || !nodesContainer) {
 			return;
 		}
 
 		nodes.splice(position, 1);
-		nodes = nodes;
 
+		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
+		nodesContainer.style.height = `${newHeight}px`;
+
+		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleTitleKeyUp(event: KeyboardEvent) {
-		if (event.key !== 'Enter') {
+		if (event.key !== 'Enter' || !nodesContainer) {
 			return;
 		}
 
@@ -46,6 +47,12 @@
 				node.order = node.order + 1;
 			}
 		}
+
+		let newHeight = NODE_HEIGHT;
+		if (nodesContainer.style.height) {
+			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
+		}
+		nodesContainer.style.height = `${newHeight}px`;
 
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [
@@ -106,7 +113,11 @@
 			nodes[i].order = nodes[i].order + 1;
 		}
 
-		nodesContainer.style.height = `${top}px`;
+		let newHeight = NODE_HEIGHT;
+		if (nodesContainer.style.height) {
+			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
+		}
+		nodesContainer.style.height = `${newHeight}px`;
 
 		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
@@ -125,20 +136,16 @@
 		}
 
 		nodes = nodes;
-
-		// Create nodes position index
-		nodesPositionIndex = getNodesPositionIndex(nodes);
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
 
-		// TODO Check for hovered items and update nodes
 		let tmpNodes = nodes;
 		const hoveredNode = nodes.find((node) => node.isHovered);
 		if (hoveredNode) {
 			tmpNodes = computeDrop(hoveredNode.id, event.detail.id, tmpNodes, nodesIndex);
-			tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING);
+			tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
 		}
 
 		draggedNodeId = undefined;
@@ -158,19 +165,21 @@
 		}
 
 		const draggedNodePosition = parseInt(draggedNode.html.style.top, 10);
-		const index = Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate heigh in not constant
+		const index = Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate, heigh in not constant, use binary search
 
 		for (const node of nodes) {
 			node.isHovered = false;
 		}
 
-		if (!nodes[index]) {
+		if (!nodes[index] || nodes[index].id === event.detail.id) {
 			return;
 		}
 
-		nodes[index].isHovered = true;
-		nodesIndex = getNodesIndex(nodes);
-		nodes = nodes;
+		let tmpNodes = nodes;
+		tmpNodes[index].isHovered = true;
+		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, [event.detail.id]);
+		nodesIndex = getNodesIndex(tmpNodes);
+		nodes = tmpNodes;
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
