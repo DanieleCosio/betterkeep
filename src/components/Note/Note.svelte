@@ -8,6 +8,7 @@
 		computeNodesPositions,
 		getChildrenNodesRecursive,
 		getNewNodePosition,
+		getNodeIdxByPosition,
 		getNodesIndex,
 		updateChildren
 	} from './note';
@@ -165,7 +166,11 @@
 		}
 
 		const draggedNodePosition = parseInt(draggedNode.html.style.top, 10);
-		const index = Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate, heigh in not constant, use binary search
+		const index = getNodeIdxByPosition(nodes, draggedNodePosition); //Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate, heigh in not constant, use binary search
+
+		if (index === undefined) {
+			return;
+		}
 
 		for (const node of nodes) {
 			node.isHovered = false;

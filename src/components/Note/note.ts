@@ -95,14 +95,38 @@ export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): numb
 	return sum;
 }
 
-export function getNodesPositionIndex(nodes: NoteNode[]): Map<number, number> {
-	const nodesIndex: Map<number, number> = new Map();
+export function getNodeIdxByPosition(nodes: NoteNode[], position: number): number | undefined {
+	const nodeIndex = getNodesIndex(nodes);
 
-	for (let i = 0; i < nodes.length; i++) {
-		nodesIndex.set(nodes[i].top, i);
+	// Binary search
+	let low = 0;
+	let mid = 0;
+	let iter = 0;
+	let high = nodes.length - 1;
+	const maxIter = high;
+	//debugger;
+	while (high >= low && iter < maxIter) {
+		mid = low + Math.floor((high - low) / 2);
+		if (mid + 1 === nodes.length) {
+			return nodeIndex[nodes[mid].id];
+		}
+
+		const midNodeTop = nodes[mid].top;
+		const nextNodeTop = nodes[mid + 1]?.top;
+		if (midNodeTop <= position && nextNodeTop > position) {
+			return nodeIndex[nodes[mid].id];
+		}
+
+		if (nodes[mid].top > position) {
+			high = mid - 1;
+		} else {
+			low = mid + 1;
+		}
+
+		iter++;
 	}
 
-	return nodesIndex;
+	return undefined;
 }
 
 export function computeNodesPositions(
