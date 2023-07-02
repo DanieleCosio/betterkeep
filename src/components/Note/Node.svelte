@@ -60,7 +60,7 @@
 		}
 	}
 
-	function handleMouseDown(event: MouseEvent) {
+	function handlePointerDown(event: PointerEvent) {
 		if (!node.html) {
 			return;
 		}
@@ -83,11 +83,11 @@
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
 
-		document.addEventListener('mousemove', handleMouseMove);
-		document.addEventListener('mouseup', handleMouseUp);
+		document.addEventListener('pointermove', handlePointerMove);
+		document.addEventListener('pointerup', handlePointerUp);
 	}
 
-	function handleMouseMove(event: MouseEvent) {
+	function handlePointerMove(event: PointerEvent) {
 		if (!node.html || !isDragging) {
 			return;
 		}
@@ -115,12 +115,8 @@
 		});
 	}
 
-	function handleMouseUp(event: MouseEvent) {
+	function handlePointerUp(event: PointerEvent) {
 		if (!node.html || !isDragging) {
-			return;
-		}
-		const parent = node.html.parentElement;
-		if (!parent) {
 			return;
 		}
 
@@ -132,8 +128,8 @@
 			id: node.id
 		});
 
-		parent.removeEventListener('mousemove', handleMouseMove);
-		document.removeEventListener('mouseup', handleMouseUp);
+		document.removeEventListener('pointermove', handlePointerMove);
+		document.removeEventListener('pointerup', handlePointerUp);
 	}
 
 	onMount(() => {
@@ -150,14 +146,14 @@
 	bind:this={node.html}
 	style="top:{node.top}px"
 	class="
-		flex justify-center flex-col absolute left-0 w-100
+		flex justify-center flex-col absolute left-0 w-100 touch-none
 		{`h-[${node.height}px]`} 
 	 	{!node.isVisible ? 'hidden' : ''}
 		{node.isHovered ? '!brightness-100' : ''}
 	"
 >
-	<div class="flex gap-2">
-		<span on:mousedown={handleMouseDown}>⋮</span>
+	<div class="flex gap-2 items-center">
+		<span class="px-1 text-lg" on:pointerdown={handlePointerDown}>⋮</span>
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
