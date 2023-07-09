@@ -38,6 +38,17 @@
 
 		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
+
+		// I need i timeout here because the textarea is been focused while the backspace is still pressed
+		setTimeout(() => {
+			const previousPosition = position - 1;
+			if (previousPosition >= 0 && nodes[previousPosition].html) {
+				const textArea = nodes[previousPosition].html?.querySelector('textarea');
+				if (textArea) {
+					textArea.focus();
+				}
+			}
+		}, 25);
 	}
 
 	function handleTitleKeyUp(event: KeyboardEvent) {

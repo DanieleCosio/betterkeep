@@ -52,7 +52,16 @@
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			dispatch('add', {
+			if (textAreaHtml?.value !== '') {
+				dispatch('add', {
+					id: node.id
+				});
+			}
+			return;
+		}
+
+		if (event.key === 'Backspace' && textAreaHtml?.value === '') {
+			dispatch('delete', {
 				id: node.id
 			});
 			return;
