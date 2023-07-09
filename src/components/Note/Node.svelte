@@ -34,16 +34,15 @@
 			return;
 		}
 
-		const height = parseInt(textAreaHtml.style.height, 10);
-
+		const currentHeight = node.height;
 		textAreaHtml.style.height = 'auto';
-		textAreaHtml.style.height = textAreaHtml.scrollHeight + 'px';
+		node.height = textAreaHtml.scrollHeight;
 
-		if (height === textAreaHtml.scrollHeight) {
+		if (currentHeight === node.height) {
 			return;
 		}
 
-		const difference = textAreaHtml.scrollHeight - height;
+		const difference = node.height - currentHeight;
 		dispatch('resized', {
 			id: node.id,
 			difference: difference
@@ -147,7 +146,7 @@
 	style="top:{node.top}px"
 	class="
 		flex justify-center flex-col absolute left-0 w-100 touch-none
-		{`h-[${node.height}px]`} 
+		
 	 	{!node.isVisible ? 'hidden' : ''}
 		{node.isHovered ? '!brightness-100' : ''}
 	"
@@ -161,6 +160,7 @@
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
+			style="height: {node.height}px;"
 			rows="1"
 		/>
 	</div>

@@ -1,7 +1,6 @@
 import type NoteNode from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
 
-// TODO Sostituire NodesIndex con un Map<string, number>
 export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): number {
 	if (a.parent_id === b.parent_id) {
 		return a.order - b.order;
@@ -87,7 +86,7 @@ export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): numb
 	let sum = 0;
 	if (nodes.length > 0) {
 		for (const node of nodes) {
-			sum += node.html ? node.html.clientHeight : nodeHeight;
+			sum += node.height;
 		}
 		sum += nodePadding * nodes.length - 1;
 	}
@@ -95,7 +94,11 @@ export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): numb
 	return sum;
 }
 
-export function getNodeIdxByPosition(nodes: NoteNode[], position: number): number | undefined {
+export function getNodeIdxByPosition(
+	nodes: NoteNode[],
+	position: number,
+	nodeHeight: number
+): number | undefined {
 	const nodeIndex = getNodesIndex(nodes);
 
 	// Binary search
@@ -104,16 +107,13 @@ export function getNodeIdxByPosition(nodes: NoteNode[], position: number): numbe
 	let iter = 0;
 	let high = nodes.length - 1;
 	const maxIter = high;
-	//debugger;
 	while (high >= low && iter < maxIter) {
 		mid = low + Math.floor((high - low) / 2);
 		if (mid + 1 === nodes.length) {
 			return nodeIndex[nodes[mid].id];
 		}
 
-		const midNodeTop = nodes[mid].top;
-		const nextNodeTop = nodes[mid + 1]?.top;
-		if (midNodeTop <= position && nextNodeTop > position) {
+		if (nodes[mid].top <= position + nodeHeight && nodes[mid].top > position) {
 			return nodeIndex[nodes[mid].id];
 		}
 

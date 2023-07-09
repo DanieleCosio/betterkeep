@@ -14,14 +14,16 @@
 	} from './note';
 
 	const NODE_HEIGHT = 24;
-	const NODE_PADDING = 8;
+	const NODE_PADDING = 12;
 
 	export let nodes: NoteNode[] = [];
 	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
+	let draggedNodeHeight: number = 0;
 
+	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
 		const position = nodesIndex[id];
@@ -86,9 +88,7 @@
 			nodes[i].top = nodes[i].top + difference;
 		}
 
-		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
-		nodesContainer.style.height = `${newHeight}px`;
-
+		nodesContainer.style.height = parseInt(nodesContainer.style.height, 10) + difference + 'px';
 		nodes = nodes;
 	}
 
@@ -114,10 +114,7 @@
 			nodes[i].order = nodes[i].order + 1;
 		}
 
-		let newHeight = NODE_HEIGHT;
-		if (nodesContainer.style.height) {
-			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
-		}
+		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
 		nodesContainer.style.height = `${newHeight}px`;
 
 		nodes = nodes;
@@ -129,6 +126,13 @@
 	) {
 		isDragging = true;
 		draggedNodeId = event.detail.id;
+
+		draggedNodeHeight = nodes[nodesIndex[draggedNodeId]].height;
+		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
+
+		for (let i = nodesIndex[draggedNodeId] + 1; i < nodes.length; i++) {
+			nodes[i].top += NODE_HEIGHT - draggedNodeHeight;
+		}
 
 		// Hide all children
 		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
@@ -142,6 +146,10 @@
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
 
+		if (draggedNodeId) {
+			nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
+		}
+
 		let tmpNodes = nodes;
 		const hoveredNode = nodes.find((node) => node.isHovered);
 		if (hoveredNode) {
@@ -149,7 +157,6 @@
 			tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
 		}
 
-		draggedNodeId = undefined;
 		for (const node of tmpNodes) {
 			node.isVisible = true;
 			node.isHovered = false;
@@ -161,12 +168,9 @@
 
 	function handleDragged(event: CustomEvent<{ id: string }>) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
-		if (draggedNode.html === undefined) {
-			return;
-		}
 
-		const draggedNodePosition = parseInt(draggedNode.html.style.top, 10);
-		const index = getNodeIdxByPosition(nodes, draggedNodePosition); //Math.floor(draggedNodePosition / NODE_HEIGHT); // TODO fast but not accurate, heigh in not constant, use binary search
+		const draggedNodePosition = draggedNode.top;
+		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height);
 
 		if (index === undefined) {
 			return;
