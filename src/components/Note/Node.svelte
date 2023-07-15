@@ -96,6 +96,7 @@
 	}
 
 	function handlePointerMove(event: PointerEvent) {
+		event.preventDefault();
 		if (!node.html || !isDragging) {
 			return;
 		}
@@ -150,18 +151,16 @@
 </script>
 
 <div
-	on:dragstart|preventDefault
 	bind:this={node.html}
 	style="top:{node.top}px"
 	class="
 		flex justify-center flex-col absolute left-0 w-100 touch-none
-		
 	 	{!node.isVisible ? 'hidden' : ''}
 		{node.isHovered ? '!brightness-100' : ''}
 	"
 >
 	<div class="flex gap-2 items-center">
-		<span class="px-1 text-lg" on:pointerdown={handlePointerDown}>⋮</span>
+		<span class="px-1 text-lg" on:pointerdown|preventDefault={handlePointerDown}>⋮</span>
 		<input class="w-5 h-5" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
