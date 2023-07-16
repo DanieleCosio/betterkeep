@@ -13,7 +13,7 @@
 		updateChildren
 	} from './note';
 
-	const NODE_HEIGHT = 24;
+	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 12;
 
 	export let nodes: NoteNode[] = [];
@@ -22,6 +22,7 @@
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
 	let draggedNodeHeight: number = 0;
+	let draggedNodePosition: number = 0;
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
@@ -139,10 +140,11 @@
 		draggedNodeId = event.detail.id;
 
 		draggedNodeHeight = nodes[nodesIndex[draggedNodeId]].height;
+		draggedNodePosition = nodes[nodesIndex[draggedNodeId]].top;
 		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
 
 		for (let i = nodesIndex[draggedNodeId] + 1; i < nodes.length; i++) {
-			nodes[i].top += NODE_HEIGHT - draggedNodeHeight;
+			nodes[i].top -= draggedNodeHeight + NODE_PADDING;
 		}
 
 		// Hide all children
@@ -157,16 +159,20 @@
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
 
-		if (draggedNodeId) {
-			nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
+		if (!draggedNodeId) {
+			return;
 		}
+
+		nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
 
 		let tmpNodes = nodes;
 		const hoveredNode = nodes.find((node) => node.isHovered);
 		if (hoveredNode) {
 			tmpNodes = computeDrop(hoveredNode.id, event.detail.id, tmpNodes, nodesIndex);
-			tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
+		} else {
+			tmpNodes[nodesIndex[draggedNodeId]].top = draggedNodePosition;
 		}
+		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
 
 		for (const node of tmpNodes) {
 			node.isVisible = true;
@@ -181,25 +187,26 @@
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
 		const draggedNodePosition = draggedNode.top;
-		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height);
-
-		if (index === undefined) {
-			return;
-		}
+		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height, [
+			draggedNode.id
+		]);
 
 		for (const node of nodes) {
 			node.isHovered = false;
+		}
+
+		if (index === undefined) {
+			nodes = nodes;
+			return;
 		}
 
 		if (!nodes[index] || nodes[index].id === event.detail.id) {
 			return;
 		}
 
-		let tmpNodes = nodes;
-		tmpNodes[index].isHovered = true;
-		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, [event.detail.id]);
-		nodesIndex = getNodesIndex(tmpNodes);
-		nodes = tmpNodes;
+		nodes[index].isHovered = true;
+		nodes = nodes;
+		nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {

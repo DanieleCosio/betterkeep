@@ -97,23 +97,59 @@ export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): numb
 export function getNodeIdxByPosition(
 	nodes: NoteNode[],
 	position: number,
-	nodeHeight: number
+	nodeHeight: number,
+	ignoreList: string[] = [],
+	trashold = 8
 ): number | undefined {
 	const nodeIndex = getNodesIndex(nodes);
+	nodes = nodes.filter((node) => !ignoreList.includes(node.id));
 
-	// Binary search
+	// If there are less than 2 nodes just iterate
+	if (nodes.length < 3) {
+		for (const node of nodes) {
+			if (ignoreList.includes(node.id)) {
+				continue;
+			}
+
+			if (
+				position >= node.top - trashold &&
+				position + nodeHeight <= node.top + node.height + trashold
+			) {
+				return nodeIndex[node.id];
+			}
+		}
+
+		return undefined;
+	}
+
+	// If more than 2 nodes use binary search
 	let low = 0;
 	let mid = 0;
 	let iter = 0;
 	let high = nodes.length - 1;
-	const maxIter = high;
+	const maxIter = nodes.length;
+
 	while (high >= low && iter < maxIter) {
 		mid = low + Math.floor((high - low) / 2);
-		if (mid + 1 === nodes.length) {
-			return nodeIndex[nodes[mid].id];
-		}
 
-		if (nodes[mid].top <= position + nodeHeight && nodes[mid].top > position) {
+		/* console.log(
+			nodes[mid].top,
+			position,
+			position + nodeHeight,
+			nodes[mid].top + nodes[mid].height,
+			high,
+			low,
+			mid,
+			iter
+		); */
+
+		/* console.log(ignoreList[0], nodes[mid].id, iter); */
+
+		if (
+			/* !ignoreList.includes(nodes[mid].id) && */
+			position >= nodes[mid].top - trashold &&
+			position + nodeHeight <= nodes[mid].top + nodes[mid].height + trashold
+		) {
 			return nodeIndex[nodes[mid].id];
 		}
 
@@ -151,7 +187,7 @@ export function computeDrop(
 	draggedNodeId: string,
 	nodes: NoteNode[],
 	nodesIndex: NodesIndex | undefined = undefined
-) {
+): NoteNode[] {
 	if (droppedId === draggedNodeId || draggedNodeId === undefined) {
 		return nodes;
 	}
