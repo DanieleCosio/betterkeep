@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
+	import { afterUpdate } from 'svelte';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import {
@@ -37,9 +38,7 @@
 		// Get new container height
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
 		nodesContainer.style.height = `${newHeight}px`;
-
 		nodes = nodes;
-		nodesIndex = getNodesIndex(nodes);
 
 		// I need i timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
 		setTimeout(() => {
@@ -86,8 +85,6 @@
 			},
 			...nodes
 		];
-
-		nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
@@ -135,7 +132,6 @@
 		nodesContainer.style.height = `${newHeight}px`;
 
 		nodes = nodes;
-		nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleDragStarted(
@@ -186,7 +182,6 @@
 			node.isHovered = false;
 		}
 
-		nodesIndex = getNodesIndex(tmpNodes);
 		nodes = tmpNodes;
 	}
 
@@ -214,7 +209,6 @@
 
 		nodes[index].isHovered = true;
 		nodes = nodes;
-		nodesIndex = getNodesIndex(nodes);
 	}
 
 	function handleAddChild(event: CustomEvent<{ id: string }>) {
@@ -236,14 +230,16 @@
 		nodes.splice(droppedNodePosition, 0, draggedNode);
 
 		nodes[droppedNodePosition].parent_id = droppedId;
-		nodesIndex = getNodesIndex(nodes);
 		nodes[droppedNodePosition].depth = nodes[nodesIndex[droppedId]].depth + 1;
 
 		nodes = updateChildren(nodes[droppedNodePosition], nodes);
-		nodesIndex = getNodesIndex(nodes);
 
 		handleDragEnded(event);
 	}
+
+	afterUpdate(() => {
+		nodesIndex = getNodesIndex(nodes);
+	});
 </script>
 
 <div class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
