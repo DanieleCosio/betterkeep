@@ -34,13 +34,14 @@
 
 		nodes.splice(position, 1);
 
+		// Get new container height
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
 		nodesContainer.style.height = `${newHeight}px`;
 
 		nodes = nodes;
 		nodesIndex = getNodesIndex(nodes);
 
-		// I need i timeout here because the textarea is been focused while the backspace is still pressed
+		// I need i timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
 		setTimeout(() => {
 			const previousPosition = position - 1;
 			if (previousPosition >= 0 && nodes[previousPosition].html) {
@@ -63,12 +64,14 @@
 			}
 		}
 
+		// Get and set new container height
 		let newHeight = NODE_HEIGHT;
 		if (nodesContainer.style.height) {
 			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
 		}
 		nodesContainer.style.height = `${newHeight}px`;
 
+		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [
 			{
@@ -88,6 +91,7 @@
 	}
 
 	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
+		// Resize note container on node resize
 		const id: string = event.detail.id;
 		const difference: number = event.detail.difference;
 
@@ -109,8 +113,8 @@
 			return;
 		}
 
+		// Add node after the current focused one
 		const top = getNewNodePosition(nodes, NODE_PADDING);
-
 		nodes.splice(nodesIndex[event.detail.id] + 1, 0, {
 			id: getRandomString(8),
 			isHovered: false,
@@ -126,6 +130,7 @@
 			nodes[i].order = nodes[i].order + 1;
 		}
 
+		// Resize note container
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
 		nodesContainer.style.height = `${newHeight}px`;
 
@@ -143,6 +148,7 @@
 		draggedNodePosition = nodes[nodesIndex[draggedNodeId]].top;
 		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
 
+		// Shift nodes below the dragged one
 		for (let i = nodesIndex[draggedNodeId] + 1; i < nodes.length; i++) {
 			nodes[i].top -= draggedNodeHeight + NODE_PADDING;
 		}
@@ -165,6 +171,7 @@
 
 		nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
 
+		// Get sorted nodes after drop and thier new positions
 		let tmpNodes = nodes;
 		const hoveredNode = nodes.find((node) => node.isHovered);
 		if (hoveredNode) {
@@ -186,6 +193,7 @@
 	function handleDragged(event: CustomEvent<{ id: string }>) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
+		// Get hovered node
 		const draggedNodePosition = draggedNode.top;
 		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height, [
 			draggedNode.id
