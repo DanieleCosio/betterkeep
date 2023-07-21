@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
-	import { afterUpdate } from 'svelte';
+	import { afterUpdate, tick } from 'svelte';
 	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import {
@@ -134,7 +134,7 @@
 		nodes = nodes;
 	}
 
-	function handleDragStarted(
+	async function handleDragStarted(
 		event: CustomEvent<{ id: string; nodeHtml: HTMLDivElement; position: { x: number; y: number } }>
 	) {
 		isDragging = true;
@@ -149,13 +149,32 @@
 			nodes[i].top -= draggedNodeHeight + NODE_PADDING;
 		}
 
+		// Resize nodes container
+		if (!nodesContainer) {
+			return;
+		}
+
+		const newHeight = parseInt(nodesContainer.style.height, 10) - draggedNodeHeight - NODE_PADDING;
+		nodesContainer.style.height = `${newHeight}px`;
+
 		// Hide all children
 		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
 		for (const child of children) {
 			nodes[nodesIndex[child.id]].isVisible = false;
 		}
 
+		// Update nodes container rect instance
+		// TODO Capire perche non funziona
+		const rect = nodesContainer.getBoundingClientRect();
+		for (const node of nodes) {
+			node.parentRect = rect;
+		}
+
 		nodes = nodes;
+
+		await tick();
+		nodes[nodesIndex[draggedNodeId]].nodeRect =
+			nodes[nodesIndex[draggedNodeId]].html?.getBoundingClientRect();
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
@@ -180,6 +199,19 @@
 		for (const node of tmpNodes) {
 			node.isVisible = true;
 			node.isHovered = false;
+		}
+
+		// Resize nodes container
+		if (nodesContainer) {
+			const newHeight =
+				parseInt(nodesContainer.style.height, 10) + draggedNodeHeight + NODE_PADDING;
+			nodesContainer.style.height = `${newHeight}px`;
+
+			// Update nodes container rect instance
+			const rect = nodesContainer.getBoundingClientRect();
+			for (const node of tmpNodes) {
+				node.parentRect = rect;
+			}
 		}
 
 		nodes = tmpNodes;

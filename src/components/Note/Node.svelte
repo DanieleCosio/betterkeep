@@ -6,8 +6,8 @@
 
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
 	const previousPosition: Point = { x: 0, y: 0 };
-	let parentRect: DOMRect;
-	let nodeRect: DOMRect;
+	//let parentRect: DOMRect;
+	//let nodeRect: DOMRect;
 	let isDragging: boolean = false;
 	export let node: NodeProps = {
 		id: getRandomString(8),
@@ -78,8 +78,9 @@
 			return;
 		}
 
-		nodeRect = node.html.getBoundingClientRect();
-		parentRect = parent.getBoundingClientRect();
+		node.nodeRect = node.html.getBoundingClientRect();
+		node.parentRect = parent.getBoundingClientRect();
+		//parentRect = parent.getBoundingClientRect();
 
 		dispatch('dragstarted', {
 			id: node.id,
@@ -97,7 +98,7 @@
 
 	function handlePointerMove(event: PointerEvent) {
 		event.preventDefault();
-		if (!node.html || !isDragging) {
+		if (!node.html || !isDragging || !node.parentRect || !node.nodeRect) {
 			return;
 		}
 
@@ -107,11 +108,11 @@
 		};
 		let y = node.html.offsetTop - delta.y;
 
-		if (event.clientY + nodeRect.height >= parentRect.bottom) {
-			y = parentRect.height - nodeRect.height;
+		if (node.parentRect && event.clientY + node.nodeRect.height >= node.parentRect.bottom) {
+			y = node.parentRect.height - node.nodeRect.height;
 		}
 
-		if (event.clientY <= parentRect.top) {
+		if (node.parentRect && event.clientY <= node.parentRect.top) {
 			y = 0;
 		}
 

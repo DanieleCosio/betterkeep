@@ -6,6 +6,8 @@ interface NodeProps {
 	html?: HTMLElement;
 	height: number;
 	top: number;
+	parentRect?: DOMRect;
+	nodeRect?: DOMRect;
 }
 
 export default NodeProps;
