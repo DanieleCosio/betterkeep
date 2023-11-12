@@ -148,37 +148,11 @@
 			return;
 		}
 
-		/* nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight; */
 		nodes[nodesIndex[draggedNodeId]].dragging = false;
 
 		// Get sorted nodes after drop and thier new positions
-		let tmpNodes = nodes;
-		const hoveredNode = nodes.find((node) => node.isHovered);
-		if (hoveredNode) {
-			tmpNodes = computeDrop(hoveredNode.id, event.detail.id, tmpNodes, nodesIndex);
-		} else {
-			tmpNodes[nodesIndex[draggedNodeId]].top = draggedNodePosition;
-		}
+		let tmpNodes = computeDrop(nodes);
 		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
-
-		for (const node of tmpNodes) {
-			node.isVisible = true;
-			node.isHovered = false;
-		}
-
-		// Resize nodes container
-		if (nodesContainer) {
-			const newHeight =
-				parseInt(nodesContainer.style.height, 10) + draggedNodeHeight + NODE_PADDING;
-			nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
-
-			// Update nodes container rect instance
-			const rect = nodesContainer.getBoundingClientRect();
-			for (const node of tmpNodes) {
-				node.parentRect = rect;
-			}
-		}
-
 		nodes = tmpNodes;
 	}
 

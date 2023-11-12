@@ -198,12 +198,12 @@ export function computeNodesPositions(
 }
 
 export function computeDrop(
-	droppedId: string,
-	draggedNodeId: string,
-	nodes: NoteNode[],
-	nodesIndex: NodesIndex | undefined = undefined
+	/* droppedId: string,
+	draggedNodeId: string, */
+	nodes: NoteNode[]
+	/* nodesIndex: NodesIndex | undefined = undefined */
 ): NoteNode[] {
-	if (droppedId === draggedNodeId || draggedNodeId === undefined) {
+	/* if (droppedId === draggedNodeId || draggedNodeId === undefined) {
 		return nodes;
 	}
 
@@ -236,7 +236,19 @@ export function computeDrop(
 
 		tmpNodes = updateChildren(droppedNode, nodes);
 		tmpNodes = updateChildren(draggedNode, tmpNodes);
-	}
+	} */
 
-	return tmpNodes;
+	nodes = nodes.sort((a: NoteNode, b: NoteNode) => {
+		if (a.top < b.top) {
+			return -1;
+		}
+
+		if (a.top > b.top) {
+			return 1;
+		}
+
+		return 0;
+	});
+
+	return nodes;
 }
