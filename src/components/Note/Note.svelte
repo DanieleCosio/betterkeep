@@ -7,23 +7,27 @@
 	import {
 		computeDrop,
 		computeNodesPositions,
+		createNewNode,
 		getChildrenNodesRecursive,
 		getNewNodePosition,
 		getNodeIdxByPosition,
 		getNodesIndex,
 		updateChildren
 	} from './note';
+	import { Direction } from '../../enums';
 
 	const NODE_HEIGHT = 20;
-	const NODE_PADDING = 12;
+	const NODE_PADDING = 6;
+	const NODE_CONTAINER_FAKE_PADDING = 0;
 
 	export let nodes: NoteNode[] = [];
 	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
-	let draggedNodeHeight: number = 0;
+	let draggedNodeHeight: number = NODE_HEIGHT;
 	let draggedNodePosition: number = 0;
+	let lastDraggedNodeIdx: number | undefined = undefined;
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
@@ -37,7 +41,7 @@
 
 		// Get new container height
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
-		nodesContainer.style.height = `${newHeight}px`;
+		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
 		nodes = nodes;
 
 		// I need i timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
@@ -68,23 +72,11 @@
 		if (nodesContainer.style.height) {
 			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
 		}
-		nodesContainer.style.height = `${newHeight}px`;
+		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
 
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
-		nodes = [
-			{
-				id: getRandomString(8),
-				isHovered: false,
-				isVisible: true,
-				depth: 0,
-				parent_id: null,
-				order: 0,
-				height: NODE_HEIGHT,
-				top: top
-			},
-			...nodes
-		];
+		nodes = [createNewNode(top, NODE_HEIGHT), ...nodes];
 	}
 
 	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
@@ -101,7 +93,8 @@
 			nodes[i].top = nodes[i].top + difference;
 		}
 
-		nodesContainer.style.height = parseInt(nodesContainer.style.height, 10) + difference + 'px';
+		nodesContainer.style.height =
+			parseInt(nodesContainer.style.height, 10) + difference + NODE_CONTAINER_FAKE_PADDING + 'px';
 		nodes = nodes;
 	}
 
@@ -112,16 +105,7 @@
 
 		// Add node after the current focused one
 		const top = getNewNodePosition(nodes, NODE_PADDING);
-		nodes.splice(nodesIndex[event.detail.id] + 1, 0, {
-			id: getRandomString(8),
-			isHovered: false,
-			isVisible: true,
-			depth: 0,
-			parent_id: null,
-			order: nodes[nodesIndex[event.detail.id]].order + 1,
-			height: NODE_HEIGHT,
-			top: top
-		});
+		nodes.splice(nodesIndex[event.detail.id] + 1, 0, createNewNode(top, NODE_HEIGHT));
 
 		for (let i = nodesIndex[event.detail.id] + 2; i < nodes.length; i++) {
 			nodes[i].order = nodes[i].order + 1;
@@ -129,7 +113,7 @@
 
 		// Resize note container
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
-		nodesContainer.style.height = `${newHeight}px`;
+		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
 
 		nodes = nodes;
 	}
@@ -140,22 +124,13 @@
 		isDragging = true;
 		draggedNodeId = event.detail.id;
 
-		draggedNodeHeight = nodes[nodesIndex[draggedNodeId]].height;
 		draggedNodePosition = nodes[nodesIndex[draggedNodeId]].top;
-		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
-
-		// Shift nodes below the dragged one
-		for (let i = nodesIndex[draggedNodeId] + 1; i < nodes.length; i++) {
-			nodes[i].top -= draggedNodeHeight + NODE_PADDING;
-		}
+		nodes[nodesIndex[draggedNodeId]].dragging = true;
 
 		// Resize nodes container
 		if (!nodesContainer) {
 			return;
 		}
-
-		const newHeight = parseInt(nodesContainer.style.height, 10) - draggedNodeHeight - NODE_PADDING;
-		nodesContainer.style.height = `${newHeight}px`;
 
 		// Hide all children
 		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
@@ -163,18 +138,7 @@
 			nodes[nodesIndex[child.id]].isVisible = false;
 		}
 
-		// Update nodes container rect instance
-		// TODO Capire perche non funziona
-		const rect = nodesContainer.getBoundingClientRect();
-		for (const node of nodes) {
-			node.parentRect = rect;
-		}
-
 		nodes = nodes;
-
-		await tick();
-		nodes[nodesIndex[draggedNodeId]].nodeRect =
-			nodes[nodesIndex[draggedNodeId]].html?.getBoundingClientRect();
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
@@ -184,7 +148,8 @@
 			return;
 		}
 
-		nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
+		/* nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight; */
+		nodes[nodesIndex[draggedNodeId]].dragging = false;
 
 		// Get sorted nodes after drop and thier new positions
 		let tmpNodes = nodes;
@@ -205,7 +170,7 @@
 		if (nodesContainer) {
 			const newHeight =
 				parseInt(nodesContainer.style.height, 10) + draggedNodeHeight + NODE_PADDING;
-			nodesContainer.style.height = `${newHeight}px`;
+			nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
 
 			// Update nodes container rect instance
 			const rect = nodesContainer.getBoundingClientRect();
@@ -217,18 +182,19 @@
 		nodes = tmpNodes;
 	}
 
-	function handleDragged(event: CustomEvent<{ id: string }>) {
+	function handleDragged(event: CustomEvent<{ id: string; direction: Direction }>) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
 		// Get hovered node
 		const draggedNodePosition = draggedNode.top;
-		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height, [
-			draggedNode.id
-		]);
-
-		for (const node of nodes) {
-			node.isHovered = false;
-		}
+		const index = getNodeIdxByPosition(
+			nodes,
+			draggedNodePosition,
+			draggedNode.height,
+			event.detail.direction,
+			[draggedNode.id]
+			//event.detail.direction
+		);
 
 		if (index === undefined) {
 			nodes = nodes;
@@ -239,7 +205,26 @@
 			return;
 		}
 
-		nodes[index].isHovered = true;
+		if (!nodes[index].transitioning && event.detail.direction !== undefined) {
+			if (event.detail.direction === Direction.Up) {
+				nodes[index].top += draggedNode.height + NODE_PADDING;
+			} else if (event.detail.direction === Direction.Down) {
+				nodes[index].top -= draggedNode.height + NODE_PADDING;
+			}
+
+			lastDraggedNodeIdx = index;
+		}
+
+		nodes = nodes;
+	}
+
+	function handleAdoptionRequest(event: CustomEvent<{ id: string }>) {
+		// Idx not found or first node
+		if (!nodesIndex[event.detail.id]) {
+			return;
+		}
+
+		nodes[nodesIndex[event.detail.id]].beingAdopted = true;
 		nodes = nodes;
 	}
 

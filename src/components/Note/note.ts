@@ -1,5 +1,22 @@
 import type NoteNode from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
+import { getRandomString } from '../utils';
+
+export function createNewNode(top: number, height: number): NoteNode {
+	return {
+		id: getRandomString(8),
+		isHovered: false,
+		isVisible: true,
+		depth: 0,
+		parent_id: null,
+		dragging: false,
+		transitioning: false,
+		order: 0,
+		height: height,
+		top: top,
+		beingAdopted: false
+	};
+}
 
 export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): number {
 	if (a.parent_id === b.parent_id) {
@@ -98,8 +115,9 @@ export function getNodeIdxByPosition(
 	nodes: NoteNode[],
 	position: number,
 	nodeHeight: number,
+	direction: Direction | undefined,
 	ignoreList: string[] = [],
-	trashold = 8
+	trashold = 3
 ): number | undefined {
 	const nodeIndex = getNodesIndex(nodes);
 	nodes = nodes.filter((node) => !ignoreList.includes(node.id));
@@ -111,10 +129,10 @@ export function getNodeIdxByPosition(
 				continue;
 			}
 
-			if (
-				position >= node.top - trashold &&
-				position + nodeHeight <= node.top + node.height + trashold
-			) {
+			const condition =
+				position + nodeHeight > node.top + node.height / 2 - trashold &&
+				position < node.top + node.height / 2 + trashold;
+			if (condition) {
 				return nodeIndex[node.id];
 			}
 		}
@@ -143,13 +161,10 @@ export function getNodeIdxByPosition(
 			iter
 		); */
 
-		/* console.log(ignoreList[0], nodes[mid].id, iter); */
-
-		if (
-			/* !ignoreList.includes(nodes[mid].id) && */
-			position >= nodes[mid].top - trashold &&
-			position + nodeHeight <= nodes[mid].top + nodes[mid].height + trashold
-		) {
+		const condition =
+			position + nodeHeight > nodes[mid].top + nodes[mid].height / 2 - trashold &&
+			position < nodes[mid].top + nodes[mid].height / 2 + trashold;
+		if (condition) {
 			return nodeIndex[nodes[mid].id];
 		}
 

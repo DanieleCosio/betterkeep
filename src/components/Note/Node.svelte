@@ -3,20 +3,25 @@
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type Point from '$types/Point';
+	import { Direction } from '../../enums';
 
-	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
+	const ADOPTION_REQUEST_THRESHOLD = 25;
+	const DRAGGED_DISPATCH_THRESHOLD = 6;
 	const previousPosition: Point = { x: 0, y: 0 };
-	//let parentRect: DOMRect;
-	//let nodeRect: DOMRect;
+	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
 	let isDragging: boolean = false;
+	let directionCounter: number = 0;
 	export let node: NodeProps = {
 		id: getRandomString(8),
 		isHovered: false,
 		isVisible: true,
+		dragging: false,
+		transitioning: false,
 		depth: 0,
 		html: undefined,
 		height: 24,
-		top: 0
+		top: 0,
+		beingAdopted: false
 	};
 
 	const dispatch = createEventDispatcher();
@@ -80,7 +85,6 @@
 
 		node.nodeRect = node.html.getBoundingClientRect();
 		node.parentRect = parent.getBoundingClientRect();
-		//parentRect = parent.getBoundingClientRect();
 
 		dispatch('dragstarted', {
 			id: node.id,
@@ -97,11 +101,13 @@
 	}
 
 	function handlePointerMove(event: PointerEvent) {
+		//TODO  Move animation frame here
 		event.preventDefault();
 		if (!node.html || !isDragging || !node.parentRect || !node.nodeRect) {
 			return;
 		}
 
+		// Compute top position
 		const delta: Point = {
 			x: previousPosition.x - event.clientX,
 			y: previousPosition.y - event.clientY
@@ -116,13 +122,36 @@
 			y = 0;
 		}
 
+		directionCounter += event.clientY - previousPosition.y;
+		let dispatchNeeded: boolean = false;
+		let direction: Direction | undefined = undefined;
+		if (directionCounter <= -DRAGGED_DISPATCH_THRESHOLD) {
+			direction = Direction.Up;
+			directionCounter = 0;
+			dispatchNeeded = true;
+		} else if (directionCounter >= DRAGGED_DISPATCH_THRESHOLD) {
+			direction = Direction.Down;
+			directionCounter = 0;
+			dispatchNeeded = true;
+		}
+
 		node.top = y;
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
 
-		dispatch('dragged', {
-			id: node.id
-		});
+		if (dispatchNeeded) {
+			dispatch('dragged', {
+				id: node.id,
+				direction: direction
+			});
+		}
+
+		// Compute x positions difference to trigger adoption request
+		if (previousPosition.x + ADOPTION_REQUEST_THRESHOLD < event.clientX) {
+			dispatch('adoption-request', {
+				id: node.id
+			});
+		}
 	}
 
 	function handlePointerUp(event: PointerEvent) {
@@ -133,6 +162,7 @@
 		isDragging = false;
 		node.html.style.zIndex = '0';
 		node.html.style.left = '0';
+		directionCounter = 0;
 
 		dispatch('dragended', {
 			id: node.id
@@ -153,7 +183,11 @@
 
 <div
 	bind:this={node.html}
-	style="top:{node.top}px"
+	style="top: {node.top}px; {!node.dragging ? 'transition: top 0.4s ease-in-out' : ''}"
+	on:transitionstart={() => (node.transitioning = true)}
+	on:transitionend={() => {
+		setTimeout(() => (node.transitioning = false), 25);
+	}}
 	class="
 		flex justify-center flex-col absolute left-0 w-100 touch-none
 	 	{!node.isVisible ? 'hidden' : ''}
@@ -161,8 +195,8 @@
 	"
 >
 	<div class="flex gap-2 items-center">
-		<span class="px-1 text-lg" on:pointerdown|preventDefault={handlePointerDown}>⋮</span>
-		<input class="w-5 h-5" type="checkbox" />
+		<span class="px-1 text-lg self-start" on:pointerdown|preventDefault={handlePointerDown}>⋮</span>
+		<input class="w-5 h-5 self-start" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
 			on:blur={handleBlur}
