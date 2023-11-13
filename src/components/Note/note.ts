@@ -67,29 +67,34 @@ export function getNodesIndex(nodes: NoteNode[]): NodesIndex {
 	return nodesIndex;
 }
 
-export function updateChildren(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
-	let nodeIndex = getNodesIndex(nodes);
-	let children = nodes.filter((element) => element.parent_id === node.id);
-	if (!children.length) {
-		return nodes;
+export function getParentId(
+	node: NoteNode,
+	nodes: NoteNode[],
+	nodesIndex: NodesIndex
+): string | null {
+	// Nodes need to be sorted by top
+	if (node.depth === 0) {
+		return null;
 	}
 
-	children.sort(compareNoteNodes.bind(children));
-	children = children.map((child) => {
-		nodes.splice(nodeIndex[child.id], 1);
-		child.depth = node.depth + 1;
-		nodeIndex = getNodesIndex(nodes);
-		return child;
-	});
-
-	nodeIndex = getNodesIndex(nodes);
-	const parentPosition = nodeIndex[node.id];
-	nodes.splice(parentPosition + 1, 0, ...children);
-
-	for (const child of children) {
-		updateChildren(child, nodes);
+	let index = nodesIndex[node.id] === 0 ? 0 : nodesIndex[node.id] - 1;
+	for (index; index > 0; --index) {
+		if (nodes[index].depth === node.depth - 1) {
+			return nodes[index].id;
+		}
 	}
 
+	return null;
+}
+
+export function updateChildren(nodes: NoteNode[]): NoteNode[] {
+	// Nodes need to be sorted by top
+	const nodesIndex = getNodesIndex(nodes);
+	for (let i = 0; i < nodes.length; i++) {
+		if (nodes[i].depth > 0) {
+			nodes[i].parent_id = getParentId(nodes[i], nodes, nodesIndex);
+		}
+	}
 	return nodes;
 }
 
@@ -197,58 +202,42 @@ export function computeNodesPositions(
 	return nodes;
 }
 
-export function computeDrop(
-	/* droppedId: string,
-	draggedNodeId: string, */
-	nodes: NoteNode[]
-	/* nodesIndex: NodesIndex | undefined = undefined */
-): NoteNode[] {
-	/* if (droppedId === draggedNodeId || draggedNodeId === undefined) {
-		return nodes;
+export function sortNodesByPosition(a: NoteNode, b: NoteNode): number {
+	if (a.top < b.top) {
+		return -1;
 	}
 
-	if (nodesIndex === undefined) {
-		nodesIndex = getNodesIndex(nodes);
+	if (a.top > b.top) {
+		return 1;
 	}
 
-	const draggedNodePosition = nodesIndex[draggedNodeId];
-	let droppedNodePosition = nodesIndex[droppedId];
-	const droppedNode = nodes[droppedNodePosition];
-	const draggedNode = nodes[draggedNodePosition];
-	let tmpNodes = nodes;
+	return 0;
+}
 
-	// Same parent just swap
-	if (nodes[draggedNodePosition].parent_id === nodes[droppedNodePosition].parent_id) {
-		const droppedNode = nodes[droppedNodePosition];
-		nodes.splice(droppedNodePosition, 1, nodes[draggedNodePosition]);
-		nodes.splice(draggedNodePosition, 1, droppedNode);
-		tmpNodes = updateChildren(droppedNode, nodes);
-		tmpNodes = updateChildren(draggedNode, tmpNodes);
-	} else {
-		if (draggedNodePosition < droppedNodePosition) {
-			droppedNodePosition -= 1;
-		}
+export function computeDrop(nodes: NoteNode[]): NoteNode[] {
+	return nodes.sort(sortNodesByPosition);
+}
 
-		nodes.splice(draggedNodePosition, 1);
-		nodes.splice(droppedNodePosition, 0, draggedNode);
-		nodes[droppedNodePosition].parent_id = droppedNode.parent_id;
-		nodes[droppedNodePosition].depth = droppedNode.depth;
+export function getNewNodeDepth(
+	node: NoteNode,
+	nodes: NoteNode[],
+	requestingAdoption: boolean,
+	requestingSeparation: boolean
+): number {
+	nodes = nodes.sort(sortNodesByPosition);
+	const nodeIndex = getNodesIndex(nodes);
 
-		tmpNodes = updateChildren(droppedNode, nodes);
-		tmpNodes = updateChildren(draggedNode, tmpNodes);
-	} */
-
-	nodes = nodes.sort((a: NoteNode, b: NoteNode) => {
-		if (a.top < b.top) {
-			return -1;
-		}
-
-		if (a.top > b.top) {
-			return 1;
-		}
-
+	if (nodeIndex[node.id] === 0) {
 		return 0;
-	});
+	}
 
-	return nodes;
+	if (requestingSeparation && node.depth > 0) {
+		return nodes[nodeIndex[node.id]].depth - 1;
+	}
+
+	if (requestingAdoption) {
+		return nodes[nodeIndex[node.id] - 1].depth + 1;
+	}
+
+	return nodes[nodeIndex[node.id] - 1].depth;
 }

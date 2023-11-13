@@ -9,6 +9,7 @@
 		computeNodesPositions,
 		createNewNode,
 		getChildrenNodesRecursive,
+		getNewNodeDepth,
 		getNewNodePosition,
 		getNodeIdxByPosition,
 		getNodesIndex,
@@ -153,10 +154,21 @@
 		// Get sorted nodes after drop and thier new positions
 		let tmpNodes = computeDrop(nodes);
 		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
+		tmpNodes = updateChildren(nodes);
 		nodes = tmpNodes;
+
+		console.log(nodes);
 	}
 
-	function handleDragged(event: CustomEvent<{ id: string; direction: Direction }>) {
+	function handleDragged(
+		event: CustomEvent<{
+			id: string;
+			direction: Direction;
+			requestingAdoption: boolean;
+			requestingSeparation: boolean;
+			deltaX: number;
+		}>
+	) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
 		// Get hovered node
@@ -167,7 +179,14 @@
 			draggedNode.height,
 			event.detail.direction,
 			[draggedNode.id]
-			//event.detail.direction
+		);
+
+		// TODO Usare event.target.deltaX per calcolare la depth dell'ultimo elemento
+		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
+			draggedNode,
+			[...nodes],
+			event.detail.requestingAdoption,
+			event.detail.requestingSeparation
 		);
 
 		if (index === undefined) {
@@ -192,42 +211,6 @@
 		nodes = nodes;
 	}
 
-	function handleAdoptionRequest(event: CustomEvent<{ id: string }>) {
-		// Idx not found or first node
-		if (!nodesIndex[event.detail.id]) {
-			return;
-		}
-
-		nodes[nodesIndex[event.detail.id]].beingAdopted = true;
-		nodes = nodes;
-	}
-
-	function handleAddChild(event: CustomEvent<{ id: string }>) {
-		const droppedId: string = event.detail.id;
-		let droppedNodePosition = nodesIndex[droppedId];
-		if (droppedId === draggedNodeId || draggedNodeId === undefined) {
-			nodes[droppedNodePosition].isHovered = false;
-			return;
-		}
-
-		const draggedNodePosition = nodesIndex[draggedNodeId];
-		const draggedNode = nodes[draggedNodePosition];
-		if (draggedNodePosition > droppedNodePosition) {
-			droppedNodePosition += 1;
-		}
-
-		nodes[droppedNodePosition].isHovered = false;
-		nodes.splice(draggedNodePosition, 1);
-		nodes.splice(droppedNodePosition, 0, draggedNode);
-
-		nodes[droppedNodePosition].parent_id = droppedId;
-		nodes[droppedNodePosition].depth = nodes[nodesIndex[droppedId]].depth + 1;
-
-		nodes = updateChildren(nodes[droppedNodePosition], nodes);
-
-		handleDragEnded(event);
-	}
-
 	afterUpdate(() => {
 		nodesIndex = getNodesIndex(nodes);
 	});
@@ -249,19 +232,6 @@
 		"
 	>
 		{#each nodes as node (node.id)}
-			<!-- <Node
-				{node}
-				on:add={handleAdd}
-				on:delete={handleDelete}
-				on:dragstarted={handleDragStarted}
-				on:dragended={handleDragEnded}
-				on:dragentered={handleDragEntered}
-				on:dragleft={handleDragLeft}
-				on:dropped={handleDropped}
-				on:addchild={handleAddChild}
-				on:resized={handleResized}
-			/> -->
-
 			<Node
 				{node}
 				on:add={handleAdd}

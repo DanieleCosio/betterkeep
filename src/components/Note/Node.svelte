@@ -5,12 +5,16 @@
 	import type Point from '$types/Point';
 	import { Direction } from '../../enums';
 
-	const ADOPTION_REQUEST_THRESHOLD = 25;
+	const ADOPTION_REQUEST_THRESHOLD = 15;
+	const SEPARATION_REQUEST_TRASHOLD = 15;
 	const DRAGGED_DISPATCH_THRESHOLD = 6;
 	const previousPosition: Point = { x: 0, y: 0 };
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
 	let isDragging: boolean = false;
 	let directionCounter: number = 0;
+	let xStartPosition: number = 0;
+	let lastSepartionPosition: number = 0;
+
 	export let node: NodeProps = {
 		id: getRandomString(8),
 		isHovered: false,
@@ -93,7 +97,7 @@
 
 		isDragging = true;
 		node.html.style.zIndex = '1000';
-		previousPosition.x = event.clientX;
+		previousPosition.x = xStartPosition = event.clientX;
 		previousPosition.y = event.clientY;
 
 		document.addEventListener('pointermove', handlePointerMove);
@@ -123,35 +127,29 @@
 		}
 
 		directionCounter += event.clientY - previousPosition.y;
-		let dispatchNeeded: boolean = false;
 		let direction: Direction | undefined = undefined;
 		if (directionCounter <= -DRAGGED_DISPATCH_THRESHOLD) {
 			direction = Direction.Up;
 			directionCounter = 0;
-			dispatchNeeded = true;
 		} else if (directionCounter >= DRAGGED_DISPATCH_THRESHOLD) {
 			direction = Direction.Down;
 			directionCounter = 0;
-			dispatchNeeded = true;
 		}
+
+		const requestingAdoption = event.clientX > xStartPosition + ADOPTION_REQUEST_THRESHOLD;
+		const requestingSeparation = event.clientX < xStartPosition - SEPARATION_REQUEST_TRASHOLD;
 
 		node.top = y;
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
 
-		if (dispatchNeeded) {
-			dispatch('dragged', {
-				id: node.id,
-				direction: direction
-			});
-		}
-
-		// Compute x positions difference to trigger adoption request
-		if (previousPosition.x + ADOPTION_REQUEST_THRESHOLD < event.clientX) {
-			dispatch('adoption-request', {
-				id: node.id
-			});
-		}
+		dispatch('dragged', {
+			id: node.id,
+			direction: direction,
+			requestingAdoption: requestingAdoption,
+			requestingSeparation: requestingSeparation,
+			deltaX: Math.abs(event.clientX - xStartPosition)
+		});
 	}
 
 	function handlePointerUp(event: PointerEvent) {
@@ -183,7 +181,9 @@
 
 <div
 	bind:this={node.html}
-	style="top: {node.top}px; {!node.dragging ? 'transition: top 0.4s ease-in-out' : ''}"
+	style="top: {node.top}px; margin-left:{node.depth * 10}px; {!node.dragging
+		? 'transition: top 0.4s ease-in-out'
+		: ''}"
 	on:transitionstart={() => (node.transitioning = true)}
 	on:transitionend={() => {
 		setTimeout(() => (node.transitioning = false), 25);
