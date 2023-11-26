@@ -120,7 +120,6 @@ export function getNodeIdxByPosition(
 	nodes: NoteNode[],
 	position: number,
 	nodeHeight: number,
-	direction: Direction | undefined,
 	ignoreList: string[] = [],
 	trashold = 3
 ): number | undefined {
@@ -222,7 +221,9 @@ export function getNewNodeDepth(
 	node: NoteNode,
 	nodes: NoteNode[],
 	requestingAdoption: boolean,
-	requestingSeparation: boolean
+	requestingSeparation: boolean,
+	deltaX: number,
+	trashold = 28
 ): number {
 	nodes = nodes.sort(sortNodesByPosition);
 	const nodeIndex = getNodesIndex(nodes);
@@ -231,12 +232,17 @@ export function getNewNodeDepth(
 		return 0;
 	}
 
-	if (requestingSeparation && node.depth > 0) {
-		return nodes[nodeIndex[node.id]].depth - 1;
+	const multiplier = Math.floor(deltaX / trashold);
+	console.log(requestingAdoption, requestingSeparation, multiplier, deltaX);
+	if (requestingSeparation) {
+		const depth = nodes[nodeIndex[node.id] - 1].depth - multiplier;
+		return depth < 0 ? 0 : depth;
 	}
 
 	if (requestingAdoption) {
-		return nodes[nodeIndex[node.id] - 1].depth + 1;
+		const depth = node.depth + multiplier;
+		const maxDepth = nodes[nodeIndex[node.id] - 1].depth + 1;
+		return depth > maxDepth ? maxDepth : depth;
 	}
 
 	return nodes[nodeIndex[node.id] - 1].depth;

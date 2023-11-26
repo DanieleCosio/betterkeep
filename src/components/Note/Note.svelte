@@ -173,20 +173,17 @@
 
 		// Get hovered node
 		const draggedNodePosition = draggedNode.top;
-		const index = getNodeIdxByPosition(
-			nodes,
-			draggedNodePosition,
-			draggedNode.height,
-			event.detail.direction,
-			[draggedNode.id]
-		);
+		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height, [
+			draggedNode.id
+		]);
 
 		// TODO Usare event.target.deltaX per calcolare la depth dell'ultimo elemento
 		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
 			draggedNode,
 			[...nodes],
 			event.detail.requestingAdoption,
-			event.detail.requestingSeparation
+			event.detail.requestingSeparation,
+			event.detail.deltaX
 		);
 
 		if (index === undefined) {
