@@ -220,8 +220,6 @@ export function computeDrop(nodes: NoteNode[]): NoteNode[] {
 export function getNewNodeDepth(
 	node: NoteNode,
 	nodes: NoteNode[],
-	requestingAdoption: boolean,
-	requestingSeparation: boolean,
 	deltaX: number,
 	trashold = 28
 ): number {
@@ -233,13 +231,12 @@ export function getNewNodeDepth(
 	}
 
 	const multiplier = Math.floor(deltaX / trashold);
-	console.log(requestingAdoption, requestingSeparation, multiplier, deltaX);
-	if (requestingSeparation) {
-		const depth = nodes[nodeIndex[node.id] - 1].depth - multiplier;
+	if (multiplier < 0) {
+		const depth = nodes[nodeIndex[node.id] - 1].depth - -multiplier;
 		return depth < 0 ? 0 : depth;
 	}
 
-	if (requestingAdoption) {
+	if (multiplier > 0) {
 		const depth = node.depth + multiplier;
 		const maxDepth = nodes[nodeIndex[node.id] - 1].depth + 1;
 		return depth > maxDepth ? maxDepth : depth;

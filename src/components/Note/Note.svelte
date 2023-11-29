@@ -11,11 +11,10 @@
 		getChildrenNodesRecursive,
 		getNewNodeDepth,
 		getNewNodePosition,
-		getNodeIdxByPosition,
 		getNodesIndex,
+		sortNodesByPosition,
 		updateChildren
 	} from './note';
-	import { Direction } from '../../enums';
 
 	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 6;
@@ -163,49 +162,20 @@
 	function handleDragged(
 		event: CustomEvent<{
 			id: string;
-			direction: Direction;
-			requestingAdoption: boolean;
-			requestingSeparation: boolean;
 			deltaX: number;
 		}>
 	) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
-		// Get hovered node
-		const draggedNodePosition = draggedNode.top;
-		const index = getNodeIdxByPosition(nodes, draggedNodePosition, draggedNode.height, [
-			draggedNode.id
-		]);
-
 		// TODO Usare event.target.deltaX per calcolare la depth dell'ultimo elemento
 		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
 			draggedNode,
 			[...nodes],
-			event.detail.requestingAdoption,
-			event.detail.requestingSeparation,
 			event.detail.deltaX
 		);
 
-		if (index === undefined) {
-			nodes = nodes;
-			return;
-		}
-
-		if (!nodes[index] || nodes[index].id === event.detail.id) {
-			return;
-		}
-
-		if (!nodes[index].transitioning && event.detail.direction !== undefined) {
-			if (event.detail.direction === Direction.Up) {
-				nodes[index].top += draggedNode.height + NODE_PADDING;
-			} else if (event.detail.direction === Direction.Down) {
-				nodes[index].top -= draggedNode.height + NODE_PADDING;
-			}
-
-			lastDraggedNodeIdx = index;
-		}
-
-		nodes = nodes;
+		const tmpNodes = nodes.sort(sortNodesByPosition);
+		nodes = computeNodesPositions(tmpNodes, NODE_PADDING, [draggedNode.id]);
 	}
 
 	afterUpdate(() => {
@@ -223,7 +193,7 @@
 	<fieldset
 		bind:this={nodesContainer}
 		class="
-			relative
+			relative py-5
 			{`gap-[${NODE_PADDING}px]`} 
 			{isDragging ? '[&>div]:brightness-75' : ''}
 		"
