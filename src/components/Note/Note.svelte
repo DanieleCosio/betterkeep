@@ -72,7 +72,7 @@
 		if (nodesContainer.style.height) {
 			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
 		}
-		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
+		nodesContainer.style.height = `${newHeight + 15}px`;
 
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
@@ -112,9 +112,7 @@
 		}
 
 		// Resize note container
-		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
-		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
-
+		nodesContainer.style.height = `${getNewNodePosition(nodes, NODE_PADDING) + 15}px`;
 		nodes = nodes;
 	}
 
@@ -174,7 +172,7 @@
 			event.detail.deltaX
 		);
 
-		const tmpNodes = nodes.sort(sortNodesByPosition);
+		let tmpNodes = nodes.sort(sortNodesByPosition);
 		nodes = computeNodesPositions(tmpNodes, NODE_PADDING, [draggedNode.id]);
 	}
 
@@ -193,7 +191,7 @@
 	<fieldset
 		bind:this={nodesContainer}
 		class="
-			relative py-5
+			relative
 			{`gap-[${NODE_PADDING}px]`} 
 			{isDragging ? '[&>div]:brightness-75' : ''}
 		"

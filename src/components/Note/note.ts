@@ -104,8 +104,12 @@ export function removeNode(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
 	return nodes;
 }
 
-export function getNewNodePosition(nodes: NoteNode[], nodePadding: number): number {
-	let sum = 0;
+export function getNewNodePosition(
+	nodes: NoteNode[],
+	nodePadding: number,
+	startingValue = 15
+): number {
+	let sum = startingValue;
 	if (nodes.length > 0) {
 		for (const node of nodes) {
 			sum += node.height;

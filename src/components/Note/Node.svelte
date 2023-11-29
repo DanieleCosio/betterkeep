@@ -3,17 +3,15 @@
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type Point from '$types/Point';
-	import { Direction } from '../../enums';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 
-	const ADOPTION_REQUEST_THRESHOLD = 15;
-	const SEPARATION_REQUEST_TRASHOLD = 15;
-	const DRAGGED_DISPATCH_THRESHOLD = 6;
 	const previousPosition: Point = { x: 0, y: 0 };
 	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
 	let isDragging: boolean = false;
-	let directionCounter: number = 0;
 	let xStartPosition: number = 0;
-	let lastSepartionPosition: number = 0;
+	let requestAnimationId: number | undefined;
+	let deltaX: number = 0;
 
 	export let node: NodeProps = {
 		id: getRandomString(8),
@@ -27,6 +25,12 @@
 		top: 0,
 		beingAdopted: false
 	};
+
+	const animatedTop = tweened(node.top, {
+		duration: 300
+	});
+
+	$: $animatedTop = node.top;
 
 	const dispatch = createEventDispatcher();
 	function handleBlur() {
@@ -102,10 +106,11 @@
 
 		document.addEventListener('pointermove', handlePointerMove);
 		document.addEventListener('pointerup', handlePointerUp);
+
+		requestAnimationId = requestAnimationFrame(dragged);
 	}
 
 	function handlePointerMove(event: PointerEvent) {
-		//TODO  Move animation frame here
 		event.preventDefault();
 		if (!node.html || !isDragging || !node.parentRect || !node.nodeRect) {
 			return;
@@ -116,8 +121,8 @@
 			x: previousPosition.x - event.clientX,
 			y: previousPosition.y - event.clientY
 		};
-		let y = node.html.offsetTop - delta.y;
 
+		let y = node.top - delta.y;
 		if (node.parentRect && event.clientY + node.nodeRect.height >= node.parentRect.bottom) {
 			y = node.parentRect.height - node.nodeRect.height;
 		}
@@ -126,30 +131,10 @@
 			y = 0;
 		}
 
-		directionCounter += event.clientY - previousPosition.y;
-		let direction: Direction | undefined = undefined;
-		if (directionCounter <= -DRAGGED_DISPATCH_THRESHOLD) {
-			direction = Direction.Up;
-			directionCounter = 0;
-		} else if (directionCounter >= DRAGGED_DISPATCH_THRESHOLD) {
-			direction = Direction.Down;
-			directionCounter = 0;
-		}
-
-		const requestingAdoption = event.clientX > xStartPosition + ADOPTION_REQUEST_THRESHOLD;
-		const requestingSeparation = event.clientX < xStartPosition - SEPARATION_REQUEST_TRASHOLD;
-
 		node.top = y;
 		previousPosition.x = event.clientX;
 		previousPosition.y = event.clientY;
-
-		dispatch('dragged', {
-			id: node.id,
-			direction: direction,
-			requestingAdoption: requestingAdoption,
-			requestingSeparation: requestingSeparation,
-			deltaX: Math.abs(event.clientX - xStartPosition)
-		});
+		deltaX = event.clientX - xStartPosition;
 	}
 
 	function handlePointerUp(event: PointerEvent) {
@@ -160,7 +145,6 @@
 		isDragging = false;
 		node.html.style.zIndex = '0';
 		node.html.style.left = '0';
-		directionCounter = 0;
 
 		dispatch('dragended', {
 			id: node.id
@@ -168,6 +152,20 @@
 
 		document.removeEventListener('pointermove', handlePointerMove);
 		document.removeEventListener('pointerup', handlePointerUp);
+
+		if (requestAnimationId) {
+			cancelAnimationFrame(requestAnimationId);
+		}
+		requestAnimationId = undefined;
+	}
+
+	function dragged() {
+		dispatch('dragged', {
+			id: node.id,
+			deltaX: deltaX
+		});
+
+		requestAnimationId = requestAnimationFrame(dragged);
 	}
 
 	onMount(() => {
@@ -180,10 +178,12 @@
 </script>
 
 <div
+	id={node.id}
 	bind:this={node.html}
-	style="top: {node.top}px; margin-left:{node.depth * 10}px; {!node.dragging
-		? 'transition: top 0.4s ease-in-out'
-		: ''}"
+	style="
+		top: {isDragging ? node.top : $animatedTop}px; 
+		margin-left:{node.depth * 10}px; 
+	"
 	on:transitionstart={() => (node.transitioning = true)}
 	on:transitionend={() => {
 		setTimeout(() => (node.transitioning = false), 25);
