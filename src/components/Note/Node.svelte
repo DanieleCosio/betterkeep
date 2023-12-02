@@ -15,15 +15,12 @@
 
 	export let node: NodeProps = {
 		id: getRandomString(8),
-		isHovered: false,
 		isVisible: true,
 		dragging: false,
-		transitioning: false,
 		depth: 0,
 		html: undefined,
 		height: 24,
-		top: 0,
-		beingAdopted: false
+		top: 0
 	};
 
 	const animatedTop = tweened(node.top, {
@@ -34,7 +31,6 @@
 
 	const dispatch = createEventDispatcher();
 	function handleBlur() {
-		node.isHovered = false;
 		if (textAreaHtml?.value === '') {
 			dispatch('delete', {
 				id: node.id
@@ -184,14 +180,9 @@
 		top: {isDragging ? node.top : $animatedTop}px; 
 		margin-left:{node.depth * 10}px; 
 	"
-	on:transitionstart={() => (node.transitioning = true)}
-	on:transitionend={() => {
-		setTimeout(() => (node.transitioning = false), 25);
-	}}
 	class="
 		flex justify-center flex-col absolute left-0 w-100 touch-none
 	 	{!node.isVisible ? 'hidden' : ''}
-		{node.isHovered ? '!brightness-100' : ''}
 	"
 >
 	<div class="flex gap-2 items-center">

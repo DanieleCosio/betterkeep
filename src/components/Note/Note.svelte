@@ -2,7 +2,6 @@
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
 	import { afterUpdate, tick } from 'svelte';
-	import { getRandomString } from '../utils';
 	import Node from './Node.svelte';
 	import {
 		computeDrop,
@@ -25,9 +24,7 @@
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
-	let draggedNodeHeight: number = NODE_HEIGHT;
 	let draggedNodePosition: number = 0;
-	let lastDraggedNodeIdx: number | undefined = undefined;
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
@@ -72,7 +69,7 @@
 		if (nodesContainer.style.height) {
 			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
 		}
-		nodesContainer.style.height = `${newHeight + 15}px`;
+		nodesContainer.style.height = `${newHeight + 30}px`;
 
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
@@ -131,10 +128,10 @@
 		}
 
 		// Hide all children
-		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
+		/* const children = getChildrenNodesRecursive(nodes, draggedNodeId);
 		for (const child of children) {
 			nodes[nodesIndex[child.id]].isVisible = false;
-		}
+		} */
 
 		nodes = nodes;
 	}
@@ -153,8 +150,6 @@
 		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
 		tmpNodes = updateChildren(nodes);
 		nodes = tmpNodes;
-
-		console.log(nodes);
 	}
 
 	function handleDragged(
@@ -165,7 +160,6 @@
 	) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
 
-		// TODO Usare event.target.deltaX per calcolare la depth dell'ultimo elemento
 		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
 			draggedNode,
 			[...nodes],

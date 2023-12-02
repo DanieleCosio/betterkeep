@@ -5,16 +5,13 @@ import { getRandomString } from '../utils';
 export function createNewNode(top: number, height: number): NoteNode {
 	return {
 		id: getRandomString(8),
-		isHovered: false,
 		isVisible: true,
 		depth: 0,
 		parent_id: null,
 		dragging: false,
-		transitioning: false,
 		order: 0,
 		height: height,
-		top: top,
-		beingAdopted: false
+		top: top
 	};
 }
 
@@ -98,12 +95,6 @@ export function updateChildren(nodes: NoteNode[]): NoteNode[] {
 	return nodes;
 }
 
-export function removeNode(node: NoteNode, nodes: NoteNode[]): NoteNode[] {
-	const index = nodes.findIndex((element) => element.id === node.id);
-	nodes.splice(index, 1);
-	return nodes;
-}
-
 export function getNewNodePosition(
 	nodes: NoteNode[],
 	nodePadding: number,
@@ -118,74 +109,6 @@ export function getNewNodePosition(
 	}
 
 	return sum;
-}
-
-export function getNodeIdxByPosition(
-	nodes: NoteNode[],
-	position: number,
-	nodeHeight: number,
-	ignoreList: string[] = [],
-	trashold = 3
-): number | undefined {
-	const nodeIndex = getNodesIndex(nodes);
-	nodes = nodes.filter((node) => !ignoreList.includes(node.id));
-
-	// If there are less than 2 nodes just iterate
-	if (nodes.length < 3) {
-		for (const node of nodes) {
-			if (ignoreList.includes(node.id)) {
-				continue;
-			}
-
-			const condition =
-				position + nodeHeight > node.top + node.height / 2 - trashold &&
-				position < node.top + node.height / 2 + trashold;
-			if (condition) {
-				return nodeIndex[node.id];
-			}
-		}
-
-		return undefined;
-	}
-
-	// If more than 2 nodes use binary search
-	let low = 0;
-	let mid = 0;
-	let iter = 0;
-	let high = nodes.length - 1;
-	const maxIter = nodes.length;
-
-	while (high >= low && iter < maxIter) {
-		mid = low + Math.floor((high - low) / 2);
-
-		/* console.log(
-			nodes[mid].top,
-			position,
-			position + nodeHeight,
-			nodes[mid].top + nodes[mid].height,
-			high,
-			low,
-			mid,
-			iter
-		); */
-
-		const condition =
-			position + nodeHeight > nodes[mid].top + nodes[mid].height / 2 - trashold &&
-			position < nodes[mid].top + nodes[mid].height / 2 + trashold;
-		if (condition) {
-			return nodeIndex[nodes[mid].id];
-		}
-
-		if (nodes[mid].top > position) {
-			high = mid - 1;
-		} else {
-			low = mid + 1;
-		}
-
-		iter++;
-	}
-
-	return undefined;
 }
 
 export function computeNodesPositions(
@@ -237,6 +160,7 @@ export function getNewNodeDepth(
 	const multiplier = Math.floor(deltaX / trashold);
 	if (multiplier < 0) {
 		const depth = nodes[nodeIndex[node.id] - 1].depth - -multiplier;
+		/* const minDepth =  */
 		return depth < 0 ? 0 : depth;
 	}
 
