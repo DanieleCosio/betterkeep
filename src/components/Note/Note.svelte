@@ -17,21 +17,22 @@
 	} from './note';
 
 	const NODE_HEIGHT = 20;
-	const NODE_PADDING = 6;
+	const NODE_PADDING = 10;
 	const NODE_CONTAINER_FAKE_PADDING = 0;
 
 	export let nodes: NoteNode[] = [];
-	let nodesContainer: HTMLFieldSetElement | undefined = undefined;
+	let nodesContainerHeight: number = 0;
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
 	let draggedNodePosition: number = 0;
+	let draggedNodeHeight: number = 0;
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
 		const id: string = event.detail.id;
 		const position = nodesIndex[id];
-		if (position === undefined || !nodesContainer) {
+		if (position === undefined) {
 			return;
 		}
 
@@ -39,7 +40,7 @@
 
 		// Get new container height
 		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
-		nodesContainer.style.height = `${newHeight + NODE_CONTAINER_FAKE_PADDING}px`;
+		nodesContainerHeight = newHeight + NODE_CONTAINER_FAKE_PADDING;
 		nodes = nodes;
 
 		// I need i timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
@@ -55,7 +56,7 @@
 	}
 
 	function handleTitleKeyUp(event: KeyboardEvent) {
-		if (event.key !== 'Enter' || !nodesContainer) {
+		if (event.key !== 'Enter') {
 			return;
 		}
 
@@ -67,10 +68,10 @@
 
 		// Get and set new container height
 		let newHeight = NODE_HEIGHT;
-		if (nodesContainer.style.height) {
-			newHeight = parseInt(nodesContainer.style.height, 10) + NODE_HEIGHT;
+		if (nodesContainerHeight) {
+			newHeight = nodesContainerHeight + NODE_HEIGHT;
 		}
-		nodesContainer.style.height = `${newHeight + 30}px`;
+		nodesContainerHeight = newHeight + 30;
 
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
@@ -83,7 +84,7 @@
 		const difference: number = event.detail.difference;
 
 		const position = nodesIndex[id];
-		if (position === undefined || !nodesContainer) {
+		if (position === undefined) {
 			return;
 		}
 
@@ -91,16 +92,11 @@
 			nodes[i].top = nodes[i].top + difference;
 		}
 
-		nodesContainer.style.height =
-			parseInt(nodesContainer.style.height, 10) + difference + NODE_CONTAINER_FAKE_PADDING + 'px';
+		nodesContainerHeight = nodesContainerHeight + difference + NODE_CONTAINER_FAKE_PADDING;
 		nodes = nodes;
 	}
 
 	function handleAdd(event: CustomEvent<{ id: string }>) {
-		if (!nodesContainer) {
-			return;
-		}
-
 		// Add node after the current focused one
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes.splice(nodesIndex[event.detail.id] + 1, 0, createNewNode(top, NODE_HEIGHT));
@@ -110,7 +106,7 @@
 		}
 
 		// Resize note container
-		nodesContainer.style.height = `${getNewNodePosition(nodes, NODE_PADDING) + 15}px`;
+		nodesContainerHeight = getNewNodePosition(nodes, NODE_PADDING) + 15;
 		nodes = nodes;
 	}
 
@@ -124,9 +120,9 @@
 		nodes[nodesIndex[draggedNodeId]].dragging = true;
 
 		// Resize nodes container
-		if (!nodesContainer) {
-			return;
-		}
+		draggedNodeHeight = nodes[nodesIndex[draggedNodeId]].height;
+		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
+		nodesContainerHeight -= draggedNodeHeight - NODE_HEIGHT;
 
 		// Hide all children
 		/* const children = getChildrenNodesRecursive(nodes, draggedNodeId);
@@ -145,6 +141,9 @@
 		}
 
 		nodes[nodesIndex[draggedNodeId]].dragging = false;
+
+		nodesContainerHeight += draggedNodeHeight - NODE_HEIGHT;
+		nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
 
 		// Get sorted nodes after drop and thier new positions
 		let tmpNodes = computeDrop(nodes);
@@ -167,8 +166,6 @@
 			event.detail.deltaX
 		);
 
-		//console.log(nodes);
-
 		let tmpNodes = updateChildrenDepth(draggedNode, nodes, nodesIndex);
 		tmpNodes = nodes.sort(sortNodesByPosition);
 		nodes = computeNodesPositions(tmpNodes, NODE_PADDING, [draggedNode.id]);
@@ -187,7 +184,7 @@
 		on:keyup={handleTitleKeyUp}
 	/>
 	<fieldset
-		bind:this={nodesContainer}
+		style="height: {nodesContainerHeight}px;"
 		class="
 			relative
 			{`gap-[${NODE_PADDING}px]`} 
