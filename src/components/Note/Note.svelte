@@ -12,7 +12,8 @@
 		getNewNodePosition,
 		getNodesIndex,
 		sortNodesByPosition,
-		updateChildren
+		updateChildren,
+		updateChildrenDepth
 	} from './note';
 
 	const NODE_HEIGHT = 20;
@@ -166,7 +167,10 @@
 			event.detail.deltaX
 		);
 
-		let tmpNodes = nodes.sort(sortNodesByPosition);
+		//console.log(nodes);
+
+		let tmpNodes = updateChildrenDepth(draggedNode, nodes, nodesIndex);
+		tmpNodes = nodes.sort(sortNodesByPosition);
 		nodes = computeNodesPositions(tmpNodes, NODE_PADDING, [draggedNode.id]);
 	}
 

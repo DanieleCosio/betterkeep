@@ -172,3 +172,28 @@ export function getNewNodeDepth(
 
 	return nodes[nodeIndex[node.id] - 1].depth;
 }
+
+export function updateChildrenDepth(
+	node: NoteNode,
+	nodes: NoteNode[],
+	nodesIndex: NodesIndex | undefined
+): NoteNode[] {
+	nodesIndex = nodesIndex ?? getNodesIndex(nodes);
+	if (nodesIndex[node.id] + 1 >= nodes.length) {
+		return nodes;
+	}
+	let child = nodes[nodesIndex[node.id] + 1];
+	if (child.parent_id !== node.id) {
+		return nodes;
+	}
+	nodes[nodesIndex[node.id] + 1].depth = node.depth + 1;
+
+	for (let idx = nodesIndex[child.id] + 1; idx < nodes.length; idx++) {
+		if (nodes[idx].parent_id === child.id) {
+			nodes[idx].depth = child.depth + 1;
+		}
+		child = nodes[idx];
+	}
+
+	return nodes;
+}
