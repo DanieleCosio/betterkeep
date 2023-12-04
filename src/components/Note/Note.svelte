@@ -4,7 +4,6 @@
 	import { afterUpdate, tick } from 'svelte';
 	import Node from './Node.svelte';
 	import {
-		computeDrop,
 		computeNodesPositions,
 		createNewNode,
 		getChildrenNodesRecursive,
@@ -12,8 +11,7 @@
 		getNewNodePosition,
 		getNodesIndex,
 		sortNodesByPosition,
-		updateChildren,
-		updateChildrenDepth
+		updateChildren
 	} from './note';
 
 	const NODE_HEIGHT = 20;

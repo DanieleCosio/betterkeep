@@ -15,29 +15,6 @@ export function createNewNode(top: number, height: number): NoteNode {
 	};
 }
 
-export function compareNoteNodes(this: NoteNode[], a: NoteNode, b: NoteNode): number {
-	if (a.parent_id === b.parent_id) {
-		return a.order - b.order;
-	}
-
-	if (!a.parent_id && b.parent_id) {
-		return -1;
-	}
-
-	if (a.parent_id && !b.parent_id) {
-		return 1;
-	}
-
-	const aParent = this.find((element) => element.id === a.parent_id);
-	const bParent = this.find((element) => element.id === b.parent_id);
-
-	if (aParent && bParent) {
-		return aParent.order - bParent.order;
-	}
-
-	return 0;
-}
-
 export function getChildrenNodes(nodes: NoteNode[], id: string | undefined): NoteNode[] {
 	return nodes.filter((element) => element.parent_id === id);
 }
@@ -156,10 +133,6 @@ export function sortNodesByPosition(a: NoteNode, b: NoteNode): number {
 	return 0;
 }
 
-export function computeDrop(nodes: NoteNode[]): NoteNode[] {
-	return nodes.sort(sortNodesByPosition);
-}
-
 export function getNewNodeDepth(
 	node: NoteNode,
 	nodes: NoteNode[],
@@ -186,29 +159,4 @@ export function getNewNodeDepth(
 	}
 
 	return nodes[nodeIndex[node.id] - 1].depth;
-}
-
-export function updateChildrenDepth(
-	node: NoteNode,
-	nodes: NoteNode[],
-	nodesIndex: NodesIndex | undefined
-): NoteNode[] {
-	nodesIndex = nodesIndex ?? getNodesIndex(nodes);
-	if (nodesIndex[node.id] + 1 >= nodes.length) {
-		return nodes;
-	}
-	let child = nodes[nodesIndex[node.id] + 1];
-	if (child.parent_id !== node.id) {
-		return nodes;
-	}
-	nodes[nodesIndex[node.id] + 1].depth = node.depth + 1;
-
-	for (let idx = nodesIndex[child.id] + 1; idx < nodes.length; idx++) {
-		if (nodes[idx].parent_id === child.id) {
-			nodes[idx].depth = child.depth + 1;
-		}
-		child = nodes[idx];
-	}
-
-	return nodes;
 }
