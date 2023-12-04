@@ -21,12 +21,12 @@
 	const NODE_CONTAINER_FAKE_PADDING = 0;
 
 	export let nodes: NoteNode[] = [];
+	let nodesCointainer: HTMLElement;
 	let nodesContainerHeight: number = 0;
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
-	let draggedNodePosition: number = 0;
-	let draggedNodeHeight: number = 0;
+	let draggingNodeStartigState: NoteNode | undefined;
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
@@ -115,40 +115,67 @@
 	) {
 		isDragging = true;
 		draggedNodeId = event.detail.id;
+		draggingNodeStartigState = { ...nodes[nodesIndex[draggedNodeId]] };
 
-		draggedNodePosition = nodes[nodesIndex[draggedNodeId]].top;
 		nodes[nodesIndex[draggedNodeId]].dragging = true;
 
 		// Resize nodes container
-		draggedNodeHeight = nodes[nodesIndex[draggedNodeId]].height;
 		nodes[nodesIndex[draggedNodeId]].height = NODE_HEIGHT;
-		nodesContainerHeight -= draggedNodeHeight - NODE_HEIGHT;
+		nodesContainerHeight -= draggingNodeStartigState.height - NODE_HEIGHT;
 
 		// Hide all children
-		/* const children = getChildrenNodesRecursive(nodes, draggedNodeId);
+		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
 		for (const child of children) {
 			nodes[nodesIndex[child.id]].isVisible = false;
-		} */
+			nodesContainerHeight -= child.height + NODE_PADDING;
+		}
 
 		nodes = nodes;
+
+		await tick();
+		nodes[nodesIndex[draggedNodeId]].parentRect = nodesCointainer.getBoundingClientRect();
 	}
 
 	function handleDragEnded(event: CustomEvent<{ id: string }>) {
 		isDragging = false;
 
-		if (!draggedNodeId) {
+		if (!draggedNodeId || !draggingNodeStartigState) {
 			return;
 		}
 
 		nodes[nodesIndex[draggedNodeId]].dragging = false;
 
-		nodesContainerHeight += draggedNodeHeight - NODE_HEIGHT;
-		nodes[nodesIndex[draggedNodeId]].height = draggedNodeHeight;
+		nodesContainerHeight += draggingNodeStartigState.height - NODE_HEIGHT;
+		nodes[nodesIndex[draggedNodeId]].height = draggingNodeStartigState.height;
 
-		// Get sorted nodes after drop and thier new positions
-		let tmpNodes = computeDrop(nodes);
+		const children = getChildrenNodesRecursive(nodes, draggedNodeId);
+		children.sort(sortNodesByPosition);
+
+		let childrenCounter = 1;
+		const depthDifference = draggingNodeStartigState.depth - nodes[nodesIndex[draggedNodeId]].depth;
+
+		for (const child of children) {
+			nodes[nodesIndex[child.id]].isVisible = true;
+			nodes[nodesIndex[child.id]].top = nodes[nodesIndex[draggedNodeId]].top + childrenCounter;
+			nodes[nodesIndex[child.id]].depth -= depthDifference;
+			nodesContainerHeight += child.height + NODE_PADDING;
+			childrenCounter++;
+		}
+
+		const draggedNodeIdx = nodesIndex[draggedNodeId];
+		nodesIndex = getNodesIndex(nodes);
+		for (let idx = nodesIndex[draggedNodeId] + children.length; idx < nodes.length; idx++) {
+			if (nodesIndex[draggedNodeId] < draggedNodeIdx) {
+				nodes[idx].top = (NODE_HEIGHT + NODE_PADDING) * children.length;
+			} else if (nodesIndex[draggedNodeId] > draggedNodeIdx) {
+				nodes[idx].top = (NODE_HEIGHT - NODE_PADDING) * children.length;
+			}
+		}
+
+		let tmpNodes = nodes.sort(sortNodesByPosition);
+		nodesIndex = getNodesIndex(tmpNodes);
 		tmpNodes = computeNodesPositions(tmpNodes, NODE_PADDING, []);
-		tmpNodes = updateChildren(nodes);
+		tmpNodes = updateChildren(tmpNodes, nodesIndex);
 		nodes = tmpNodes;
 	}
 
@@ -159,16 +186,13 @@
 		}>
 	) {
 		const draggedNode = nodes[nodesIndex[event.detail.id]];
-
 		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
 			draggedNode,
-			[...nodes],
+			nodes,
 			event.detail.deltaX
 		);
 
-		let tmpNodes = updateChildrenDepth(draggedNode, nodes, nodesIndex);
-		tmpNodes = nodes.sort(sortNodesByPosition);
-		nodes = computeNodesPositions(tmpNodes, NODE_PADDING, [draggedNode.id]);
+		nodes = computeNodesPositions(nodes, NODE_PADDING, [draggedNode.id]);
 	}
 
 	afterUpdate(() => {
@@ -184,8 +208,10 @@
 		on:keyup={handleTitleKeyUp}
 	/>
 	<fieldset
+		bind:this={nodesCointainer}
 		style="height: {nodesContainerHeight}px;"
 		class="
+			bg-red-700
 			relative
 			{`gap-[${NODE_PADDING}px]`} 
 			{isDragging ? '[&>div]:brightness-75' : ''}
