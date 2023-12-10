@@ -2,11 +2,11 @@ import type NoteNode from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
 import { getRandomString } from '../utils';
 
-export function createNewNode(top: number, height: number): NoteNode {
+export function createNewNode(top: number, height: number, depth = 0): NoteNode {
 	return {
 		id: getRandomString(8),
 		isVisible: true,
-		depth: 0,
+		depth: depth,
 		parent_id: null,
 		dragging: false,
 		order: 0,

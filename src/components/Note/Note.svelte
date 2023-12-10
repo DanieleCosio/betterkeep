@@ -37,11 +37,11 @@
 		nodes.splice(position, 1);
 
 		// Get new container height
-		const newHeight = getNewNodePosition(nodes, NODE_PADDING);
+		const newHeight = getNewNodePosition(nodes, NODE_PADDING) + 15;
 		nodesContainerHeight = newHeight + NODE_CONTAINER_FAKE_PADDING;
 		nodes = nodes;
 
-		// I need i timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
+		// I need a timeout here because the textarea is been focused while the backspace is still pressed; Select previous node
 		setTimeout(() => {
 			const previousPosition = position - 1;
 			if (previousPosition >= 0 && nodes[previousPosition].html) {
@@ -56,12 +56,6 @@
 	function handleTitleKeyUp(event: KeyboardEvent) {
 		if (event.key !== 'Enter') {
 			return;
-		}
-
-		for (const node of nodes) {
-			if (!node.parent_id) {
-				node.order = node.order + 1;
-			}
 		}
 
 		// Get and set new container height
@@ -96,16 +90,15 @@
 
 	function handleAdd(event: CustomEvent<{ id: string }>) {
 		// Add node after the current focused one
-		const top = getNewNodePosition(nodes, NODE_PADDING);
-		nodes.splice(nodesIndex[event.detail.id] + 1, 0, createNewNode(top, NODE_HEIGHT));
+		const focusedNode = nodes[nodesIndex[event.detail.id]];
+		const top = focusedNode.top + 1;
 
-		for (let i = nodesIndex[event.detail.id] + 2; i < nodes.length; i++) {
-			nodes[i].order = nodes[i].order + 1;
-		}
+		const tmpNodes = nodes;
+		tmpNodes.push(createNewNode(top, NODE_HEIGHT, focusedNode.depth));
+		tmpNodes.sort(sortNodesByPosition);
 
-		// Resize note container
 		nodesContainerHeight = getNewNodePosition(nodes, NODE_PADDING) + 15;
-		nodes = nodes;
+		nodes = computeNodesPositions(tmpNodes, NODE_PADDING);
 	}
 
 	async function handleDragStarted(
