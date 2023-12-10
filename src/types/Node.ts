@@ -8,6 +8,7 @@ interface NodeProps {
 	html?: HTMLElement;
 	parentRect?: DOMRect;
 	nodeRect?: DOMRect;
+	value: string;
 }
 
 export default NodeProps;

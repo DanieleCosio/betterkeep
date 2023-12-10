@@ -9,9 +9,9 @@ export function createNewNode(top: number, height: number, depth = 0): NoteNode 
 		depth: depth,
 		parent_id: null,
 		dragging: false,
-		order: 0,
 		height: height,
-		top: top
+		top: top,
+		value: ''
 	};
 }
 
@@ -34,7 +34,6 @@ export function getNodesIndex(nodes: NoteNode[]): NodesIndex {
 	const nodesIndex: NodesIndex = {};
 
 	for (let i = 0; i < nodes.length; i++) {
-		nodes[i].order = i;
 		nodesIndex[nodes[i].id] = i;
 	}
 

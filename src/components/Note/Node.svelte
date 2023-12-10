@@ -12,6 +12,7 @@
 	let xStartPosition: number = 0;
 	let requestAnimationId: number | undefined;
 	let deltaX: number = 0;
+	let value: string = '';
 
 	export let node: NodeProps = {
 		id: getRandomString(8),
@@ -20,8 +21,12 @@
 		depth: 0,
 		html: undefined,
 		height: 24,
-		top: 0
+		top: 0,
+		value: ''
 	};
+
+	value = node.value;
+	$: node.value = value;
 
 	const animatedTop = tweened(node.top, {
 		duration: 300
@@ -193,6 +198,7 @@
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
+			bind:value
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
 			style="height: {node.height}px;"
 			rows="1"
