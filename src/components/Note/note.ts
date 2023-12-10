@@ -142,21 +142,28 @@ export function getNewNodeDepth(
 	nodes = nodes.sort(sortNodesByPosition);
 	const nodeIndex = getNodesIndex(nodes);
 
-	if (nodeIndex[node.id] === 0) {
+	const idx = nodeIndex[node.id];
+	if (idx === 0) {
 		return 0;
 	}
 
 	const multiplier = Math.floor(deltaX / trashold);
-	if (multiplier < 0) {
-		const depth = nodes[nodeIndex[node.id] - 1].depth - -multiplier;
-		return depth < 0 ? 0 : depth;
+	let depth = nodes[idx - 1].depth;
+	let minDepth = 0;
+
+	if (idx + 1 < nodes.length && idx - 1 >= 0 && nodes[idx + 1].parent_id === nodes[idx - 1].id) {
+		minDepth = nodes[idx + 1].depth;
 	}
 
 	if (multiplier > 0) {
-		const depth = node.depth + multiplier;
-		const maxDepth = nodes[nodeIndex[node.id] - 1].depth + 1;
+		depth = node.depth + multiplier;
+		const maxDepth = nodes[idx - 1].depth + 1;
 		return depth > maxDepth ? maxDepth : depth;
 	}
 
-	return nodes[nodeIndex[node.id] - 1].depth;
+	if (multiplier < 0) {
+		depth = node.depth - -multiplier;
+	}
+
+	return depth < minDepth ? minDepth : depth;
 }
