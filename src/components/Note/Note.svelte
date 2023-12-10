@@ -130,7 +130,7 @@
 
 		nodes = nodes;
 
-		await tick();
+		//await tick();
 		nodes[nodesIndex[draggedNodeId]].parentRect = nodesCointainer.getBoundingClientRect();
 	}
 
