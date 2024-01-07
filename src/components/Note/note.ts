@@ -2,16 +2,17 @@ import type NoteNode from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
 import { getRandomString } from '../utils';
 
-export function createNewNode(top: number, height: number, depth = 0): NoteNode {
+export function createNewNode(top: number, height: number, depth = 0, value = ''): NoteNode {
 	return {
 		id: getRandomString(8),
+		isFocused: true,
 		isVisible: true,
 		depth: depth,
 		parent_id: null,
 		dragging: false,
 		height: height,
 		top: top,
-		value: ''
+		value: value
 	};
 }
 
@@ -165,4 +166,18 @@ export function getNewNodeDepth(
 	}
 
 	return depth < minDepth ? minDepth : depth;
+}
+
+export function isFocused(isTitleFocused: boolean, nodes: NoteNode[]): boolean {
+	if (isTitleFocused) {
+		return true;
+	}
+
+	for (const node of nodes) {
+		if (node.isFocused) {
+			return true;
+		}
+	}
+
+	return false;
 }

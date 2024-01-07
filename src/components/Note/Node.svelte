@@ -17,6 +17,7 @@
 	export let node: NodeProps = {
 		id: getRandomString(8),
 		isVisible: true,
+		isFocused: true,
 		dragging: false,
 		depth: 0,
 		html: undefined,
@@ -35,12 +36,25 @@
 	$: $animatedTop = node.top;
 
 	const dispatch = createEventDispatcher();
+
+	function handleFocus() {
+		node.isFocused = true;
+		dispatch('focused', {
+			id: node.id
+		});
+	}
+
 	function handleBlur() {
 		if (textAreaHtml?.value === '') {
 			dispatch('delete', {
 				id: node.id
 			});
 		}
+
+		node.isFocused = false;
+		dispatch('blured', {
+			id: node.id
+		});
 	}
 
 	function handleInput() {

@@ -10,15 +10,29 @@
 		getNewNodeDepth,
 		getNewNodePosition,
 		getNodesIndex,
+		isFocused,
 		sortNodesByPosition,
 		updateChildren
 	} from './note';
+	import type { NoteProps } from '$types/Note';
+	import { getRandomString } from '../utils';
 
 	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 10;
 	const NODE_CONTAINER_FAKE_PADDING = 0;
 
 	export let nodes: NoteNode[] = [];
+	export let note: NoteProps = {
+		id: getRandomString(),
+		nodes: nodes,
+		isFocused: true,
+		created_at: -1,
+		updated_at: -1
+	};
+
+	$: note.nodes = nodes;
+
+	let isTitleFocused: boolean = false;
 	let nodesCointainer: HTMLElement;
 	let nodesContainerHeight: number = 0;
 	let nodesIndex: NodesIndex = {};
@@ -68,6 +82,13 @@
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [createNewNode(top, NODE_HEIGHT), ...nodes];
+	function handleTitleFocus() {
+		note.isFocused = isTitleFocused = true;
+	}
+
+	function handleTitleBlur() {
+		isTitleFocused = false;
+		note.isFocused = isFocused(isTitleFocused, nodes);
 	}
 
 	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
@@ -186,6 +207,14 @@
 		nodes = computeNodesPositions(nodes, NODE_PADDING, [draggedNode.id]);
 	}
 
+	function handleFocused() {
+		note.isFocused = true;
+	}
+
+	function handleBlured() {
+		note.isFocused = isFocused(isTitleFocused, nodes);
+	}
+
 	afterUpdate(() => {
 		nodesIndex = getNodesIndex(nodes);
 	});
@@ -197,6 +226,8 @@
 		placeholder="Titolo"
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
+		on:focus={handleTitleFocus}
+		on:blur={handleTitleBlur}
 	/>
 	<fieldset
 		bind:this={nodesCointainer}
@@ -211,6 +242,8 @@
 		{#each nodes as node (node.id)}
 			<Node
 				{node}
+				on:focused={handleFocused}
+				on:blured={handleBlured}
 				on:add={handleAdd}
 				on:delete={handleDelete}
 				on:dragstarted={handleDragStarted}

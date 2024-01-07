@@ -1,6 +1,7 @@
 interface NodeProps {
 	readonly id: string;
 	isVisible: boolean;
+	isFocused: boolean;
 	dragging: boolean;
 	depth: number;
 	height: number;
