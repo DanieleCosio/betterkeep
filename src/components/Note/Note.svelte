@@ -1,11 +1,15 @@
 <script lang="ts">
+	/*
+		TODO Updated_at 
+	 */
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
-	import { afterUpdate, tick } from 'svelte';
+	import { afterUpdate, createEventDispatcher } from 'svelte';
 	import Node from './Node.svelte';
 	import {
 		computeNodesPositions,
 		createNewNode,
+		createNote,
 		getChildrenNodesRecursive,
 		getNewNodeDepth,
 		getNewNodePosition,
@@ -15,30 +19,29 @@
 		updateChildren
 	} from './note';
 	import type { NoteProps } from '$types/Note';
-	import { getRandomString } from '../utils';
 
 	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 10;
 	const NODE_CONTAINER_FAKE_PADDING = 0;
 
-	export let nodes: NoteNode[] = [];
-	export let note: NoteProps = {
-		id: getRandomString(),
-		nodes: nodes,
-		isFocused: true,
-		created_at: -1,
-		updated_at: -1
-	};
-
-	$: note.nodes = nodes;
+	export let note: NoteProps = createNote([]);
 
 	let isTitleFocused: boolean = false;
+	let title: string = note.title;
+	let nodes: NoteNode[] = note.nodes;
 	let nodesCointainer: HTMLElement;
-	let nodesContainerHeight: number = 0;
+	let nodesContainerHeight: number = getNewNodePosition(nodes, NODE_PADDING + 2);
 	let nodesIndex: NodesIndex = {};
 	let isDragging: boolean = false;
 	let draggedNodeId: string | undefined = undefined;
 	let draggingNodeStartigState: NoteNode | undefined;
+	const dispatch = createEventDispatcher();
+
+	$: {
+		note.nodes = nodes;
+		note.title = title;
+		console.log(nodes);
+	}
 
 	/* EVENTS */
 	function handleDelete(event: CustomEvent<{ id: string }>) {
@@ -67,7 +70,7 @@
 		}, 25);
 	}
 
-	function handleTitleKeyUp(event: KeyboardEvent) {
+	async function handleTitleKeyUp(event: KeyboardEvent) {
 		if (event.key !== 'Enter') {
 			return;
 		}
@@ -82,6 +85,8 @@
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [createNewNode(top, NODE_HEIGHT), ...nodes];
+	}
+
 	function handleTitleFocus() {
 		note.isFocused = isTitleFocused = true;
 	}
@@ -122,7 +127,7 @@
 		nodes = computeNodesPositions(tmpNodes, NODE_PADDING);
 	}
 
-	async function handleDragStarted(
+	function handleDragStarted(
 		event: CustomEvent<{ id: string; nodeHtml: HTMLDivElement; position: { x: number; y: number } }>
 	) {
 		isDragging = true;
@@ -143,8 +148,6 @@
 		}
 
 		nodes = nodes;
-
-		//await tick();
 		nodes[nodesIndex[draggedNodeId]].parentRect = nodesCointainer.getBoundingClientRect();
 	}
 
@@ -211,8 +214,15 @@
 		note.isFocused = true;
 	}
 
-	function handleBlured() {
+	async function handleBlurred() {
 		note.isFocused = isFocused(isTitleFocused, nodes);
+		if (note.isFocused) {
+			return;
+		}
+
+		dispatch('blurred', {
+			note: note
+		});
 	}
 
 	afterUpdate(() => {
@@ -228,6 +238,7 @@
 		on:keyup={handleTitleKeyUp}
 		on:focus={handleTitleFocus}
 		on:blur={handleTitleBlur}
+		bind:value={title}
 	/>
 	<fieldset
 		bind:this={nodesCointainer}
@@ -243,7 +254,7 @@
 			<Node
 				{node}
 				on:focused={handleFocused}
-				on:blured={handleBlured}
+				on:blured={handleBlurred}
 				on:add={handleAdd}
 				on:delete={handleDelete}
 				on:dragstarted={handleDragStarted}

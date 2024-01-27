@@ -1,6 +1,19 @@
 import type NoteNode from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
 import { getRandomString } from '../utils';
+import type { NoteProps } from '$types/Note';
+
+export function createNote(nodes: NoteNode[] = []): NoteProps {
+	const createAt = Date.now();
+	return {
+		id: getRandomString(),
+		title: '',
+		nodes: nodes,
+		isFocused: true,
+		created_at: createAt,
+		updated_at: createAt
+	};
+}
 
 export function createNewNode(top: number, height: number, depth = 0, value = ''): NoteNode {
 	return {
@@ -180,4 +193,14 @@ export function isFocused(isTitleFocused: boolean, nodes: NoteNode[]): boolean {
 	}
 
 	return false;
+}
+
+export function updateStore(currentData: NoteProps[], note: NoteProps): NoteProps[] {
+	const idx = currentData.findIndex((item: NoteProps) => item.id === note.id);
+	if (idx !== -1) {
+		currentData[idx] = note;
+		return currentData;
+	}
+
+	return [...currentData, note];
 }

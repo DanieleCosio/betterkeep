@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getRandomString } from '../utils';
+	import { debounce, getRandomString } from '../utils';
 	import type NodeProps from '$types/Node';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type Point from '$types/Point';
@@ -13,6 +13,7 @@
 	let requestAnimationId: number | undefined;
 	let deltaX: number = 0;
 	let value: string = '';
+	let requestSaveDebounceTimer: NodeJS.Timeout | undefined;
 
 	export let node: NodeProps = {
 		id: getRandomString(8),
@@ -58,6 +59,12 @@
 	}
 
 	function handleInput() {
+		/* requestSaveDebounceTimer = debounce(() => {
+			dispatch('valueChanged', {
+				id: node.id
+			});
+		}, requestSaveDebounceTimer); */
+
 		if (!textAreaHtml) {
 			return;
 		}
@@ -209,6 +216,7 @@
 		<input class="w-5 h-5 self-start" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
+			on:focus={handleFocus}
 			on:blur={handleBlur}
 			on:input={handleInput}
 			on:keydown={handleKeyDown}
