@@ -40,7 +40,6 @@
 	$: {
 		note.nodes = nodes;
 		note.title = title;
-		console.log(nodes);
 	}
 
 	/* EVENTS */

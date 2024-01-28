@@ -10,23 +10,28 @@
 	let notes: NoteProps[] = $notesStore;
 	let blankNote: NoteProps = createNote();
 
-	$: console.log(notes);
-
 	async function handleBlurred(
 		event: CustomEvent<{
 			note: NoteProps;
 		}>
 	) {
-		console.log('Blurred');
+		if (!(blankNote.title || blankNote.nodes.length)) {
+			return;
+		}
+
 		notesStore.update((currentData: NoteProps[]) => {
 			return updateStore(currentData, event.detail.note);
 		});
-
 		notes = $notesStore;
+		blankNote = createNote();
+		console.log(blankNote);
 	}
 </script>
 
-<Note note={blankNote} on:blurred={handleBlurred} />
+{#key blankNote}
+	<Note note={blankNote} on:blurred={handleBlurred} />
+{/key}
+
 <!-- Notes -->
 <div class="flex gap-1">
 	{#each notes as note (note.id)}
