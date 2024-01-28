@@ -224,6 +224,12 @@
 		});
 	}
 
+	function handleDeleteClick() {
+		dispatch('delete', {
+			id: note.id
+		});
+	}
+
 	afterUpdate(() => {
 		nodesIndex = getNodesIndex(nodes);
 	});
@@ -263,6 +269,10 @@
 			/>
 		{/each}
 	</fieldset>
+
+	<div class="flex">
+		<button on:click={handleDeleteClick}>🔴</button>
+	</div>
 </div>
 
 <style></style>
