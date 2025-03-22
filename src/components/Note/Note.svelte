@@ -1,11 +1,13 @@
 <script lang="ts">
 	/*
+		TODO Fix focus and blur logic 
 		TODO Updated_at 
 	 */
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
-	import { afterUpdate, createEventDispatcher } from 'svelte';
-	import Node from './Node.svelte';
+	import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
+	import NodeComponet from './Node.svelte';
+
 	import {
 		computeNodesPositions,
 		createNewNode,
@@ -14,7 +16,6 @@
 		getNewNodeDepth,
 		getNewNodePosition,
 		getNodesIndex,
-		isFocused,
 		sortNodesByPosition,
 		updateChildren
 	} from './note';
@@ -26,7 +27,7 @@
 
 	export let note: NoteProps = createNote([]);
 
-	let isTitleFocused: boolean = false;
+	let noteHtml: HTMLDivElement;
 	let title: string = note.title;
 	let nodes: NoteNode[] = note.nodes;
 	let nodesCointainer: HTMLElement;
@@ -36,6 +37,31 @@
 	let draggedNodeId: string | undefined = undefined;
 	let draggingNodeStartigState: NoteNode | undefined;
 	const dispatch = createEventDispatcher();
+	const blurNote = (event: Event) => {
+		if (noteHtml && noteHtml.contains(event.target as Node)) {
+			return;
+		}
+
+		// Wait for node generation
+		setTimeout(() => {
+			if (!noteHtml) {
+				return;
+			}
+
+			for (const child of noteHtml.getElementsByTagName('*')) {
+				if (child === document.activeElement) {
+					return;
+				}
+			}
+
+			document.removeEventListener('click', blurNote);
+
+			note.isFocused = false;
+			dispatch('blurred', {
+				note: note
+			});
+		}, 50);
+	};
 
 	$: {
 		note.nodes = nodes;
@@ -84,15 +110,6 @@
 		// Add new node
 		const top = getNewNodePosition(nodes, NODE_PADDING);
 		nodes = [createNewNode(top, NODE_HEIGHT), ...nodes];
-	}
-
-	function handleTitleFocus() {
-		note.isFocused = isTitleFocused = true;
-	}
-
-	function handleTitleBlur() {
-		isTitleFocused = false;
-		note.isFocused = isFocused(isTitleFocused, nodes);
 	}
 
 	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
@@ -209,19 +226,34 @@
 		nodes = computeNodesPositions(nodes, NODE_PADDING, [draggedNode.id]);
 	}
 
-	function handleFocused() {
-		note.isFocused = true;
-	}
-
-	async function handleBlurred() {
-		note.isFocused = isFocused(isTitleFocused, nodes);
+	function handleNoteFocus(event: Event | MouseEvent) {
 		if (note.isFocused) {
 			return;
 		}
 
-		dispatch('blurred', {
-			note: note
-		});
+		note.isFocused = true;
+		document.addEventListener('click', blurNote);
+	}
+
+	function handleBlur() {
+		setTimeout(() => {
+			if (!noteHtml) {
+				return;
+			}
+
+			for (const child of noteHtml.getElementsByTagName('*')) {
+				if (child === document.activeElement) {
+					return;
+				}
+			}
+
+			document.removeEventListener('click', blurNote);
+
+			note.isFocused = false;
+			dispatch('blurred', {
+				note: note
+			});
+		}, 50);
 	}
 
 	function handleDeleteClick() {
@@ -230,19 +262,32 @@
 		});
 	}
 
+	onMount(() => {
+		note.isFocused = true;
+		document.addEventListener('click', blurNote);
+	});
+
 	afterUpdate(() => {
 		nodesIndex = getNodesIndex(nodes);
 	});
 </script>
 
-<div class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2">
+<div
+	bind:this={noteHtml}
+	on:click={handleNoteFocus}
+	on:focus={handleNoteFocus}
+	on:blur={handleBlur}
+	on:keydown={() => {}}
+	role="textbox"
+	tabindex="0"
+	class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2"
+>
 	<input
 		type="text"
 		placeholder="Titolo"
 		class="bg-lime-700 text-white border-none"
 		on:keyup={handleTitleKeyUp}
-		on:focus={handleTitleFocus}
-		on:blur={handleTitleBlur}
+		on:blur={handleBlur}
 		bind:value={title}
 	/>
 	<fieldset
@@ -256,16 +301,15 @@
 		"
 	>
 		{#each nodes as node (node.id)}
-			<Node
+			<NodeComponet
 				{node}
-				on:focused={handleFocused}
-				on:blured={handleBlurred}
 				on:add={handleAdd}
 				on:delete={handleDelete}
 				on:dragstarted={handleDragStarted}
 				on:dragended={handleDragEnded}
 				on:dragged={handleDragged}
 				on:resized={handleResized}
+				on:blured={handleBlur}
 			/>
 		{/each}
 	</fieldset>
@@ -274,5 +318,3 @@
 		<button on:click={handleDeleteClick}>🔴</button>
 	</div>
 </div>
-
-<style></style>

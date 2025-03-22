@@ -180,27 +180,3 @@ export function getNewNodeDepth(
 
 	return depth < minDepth ? minDepth : depth;
 }
-
-export function isFocused(isTitleFocused: boolean, nodes: NoteNode[]): boolean {
-	if (isTitleFocused) {
-		return true;
-	}
-
-	for (const node of nodes) {
-		if (node.isFocused) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-export function updateStore(currentData: NoteProps[], note: NoteProps): NoteProps[] {
-	const idx = currentData.findIndex((item: NoteProps) => item.id === note.id);
-	if (idx !== -1) {
-		currentData[idx] = note;
-		return currentData;
-	}
-
-	return [...currentData, note];
-}
