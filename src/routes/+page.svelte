@@ -5,38 +5,38 @@
 	import NoteStore from '../stores/NoteStore';
 	import { createNote } from '../components/Note/note';
 
-	let notes: NoteProps[] = $NoteStore;
-	let blankNote: NoteProps = createNote();
+	let notes: NoteProps[] = $state($NoteStore);
+	let blankNote: NoteProps = $state(createNote());
 
-	async function handleBlurred(event: CustomEvent<{ note: NoteProps }>) {
+	async function handleBlurred(note: NoteProps) {
 		if (!(blankNote.title || blankNote.nodes.length)) {
 			return;
 		}
 
-		NoteStore.updateNote(event.detail.note);
+		NoteStore.updateNote(note);
 		notes = $NoteStore;
 		blankNote = createNote();
 	}
 
-	function handleDelete(event: CustomEvent<{ id: string }>) {
-		NoteStore.deleteNote(event.detail.id);
+	function handleDelete(id: string) {
+		NoteStore.deleteNote(id);
 		notes = $NoteStore;
 	}
 
-	function handleBlankDelete(event: CustomEvent<{ id: string }>) {
-		NoteStore.deleteNote(event.detail.id);
+	function handleBlankDelete(id: string) {
+		NoteStore.deleteNote(id);
 		notes = $NoteStore;
 		blankNote = createNote();
 	}
 </script>
 
 {#key blankNote}
-	<Note note={blankNote} on:blurred={handleBlurred} on:delete={handleBlankDelete} />
+	<Note note={blankNote} blurred={handleBlurred} deleted={handleBlankDelete} />
 {/key}
 
 <!-- Notes -->
 <div class="flex gap-1">
 	{#each notes as note (note.id)}
-		<Note {note} on:blurred={handleBlurred} on:delete={handleDelete} />
+		<Note {note} blurred={handleBlurred} deleted={handleDelete} />
 	{/each}
 </div>

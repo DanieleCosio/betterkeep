@@ -5,7 +5,7 @@
 	 */
 	import type { NodesIndex } from '$types/NodesIndex';
 	import type NoteNode from '$types/NoteNode';
-	import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import NodeComponet from './Node.svelte';
 
 	import {
@@ -25,18 +25,25 @@
 	const NODE_PADDING = 10;
 	const NODE_CONTAINER_FAKE_PADDING = 0;
 
-	export let note: NoteProps = createNote([]);
+	interface Props {
+		note?: NoteProps;
+		blurred: (note: NoteProps) => void;
+		deleted: (id: string) => void;
+	}
 
-	let noteHtml: HTMLDivElement;
-	let title: string = note.title;
-	let nodes: NoteNode[] = note.nodes;
-	let nodesCointainer: HTMLElement;
-	let nodesContainerHeight: number = getNewNodePosition(nodes, NODE_PADDING + 2);
+	let { note = $bindable(createNote([])), blurred, deleted }: Props = $props();
+
+	let noteHtml: HTMLDivElement | undefined = $state();
+	let title: string = $state(note.title);
+	let nodes: NoteNode[] = $state(note.nodes);
+	let nodesCointainer: HTMLElement | undefined = $state();
+	// svelte-ignore state_referenced_locally
+	let nodesContainerHeight: number = $state(getNewNodePosition(nodes, NODE_PADDING + 2));
 	let nodesIndex: NodesIndex = {};
-	let isDragging: boolean = false;
+	let isDragging: boolean = $state(false);
 	let draggedNodeId: string | undefined = undefined;
 	let draggingNodeStartigState: NoteNode | undefined;
-	const dispatch = createEventDispatcher();
+
 	const blurNote = (event: Event) => {
 		if (noteHtml && noteHtml.contains(event.target as Node)) {
 			return;
@@ -57,20 +64,17 @@
 			document.removeEventListener('click', blurNote);
 
 			note.isFocused = false;
-			dispatch('blurred', {
-				note: note
-			});
+			blurred(note);
 		}, 50);
 	};
 
-	$: {
+	$effect.pre(() => {
 		note.nodes = nodes;
 		note.title = title;
-	}
+	});
 
 	/* EVENTS */
-	function handleDelete(event: CustomEvent<{ id: string }>) {
-		const id: string = event.detail.id;
+	function handleDelete(id: string) {
 		const position = nodesIndex[id];
 		if (position === undefined) {
 			return;
@@ -112,11 +116,8 @@
 		nodes = [createNewNode(top, NODE_HEIGHT), ...nodes];
 	}
 
-	function handleResized(event: CustomEvent<{ id: string; difference: number }>) {
+	function handleResized(id: string, difference: number) {
 		// Resize note container on node resize
-		const id: string = event.detail.id;
-		const difference: number = event.detail.difference;
-
 		const position = nodesIndex[id];
 		if (position === undefined) {
 			return;
@@ -130,9 +131,9 @@
 		nodes = nodes;
 	}
 
-	function handleAdd(event: CustomEvent<{ id: string }>) {
+	function handleAdd(id: string) {
 		// Add node after the current focused one
-		const focusedNode = nodes[nodesIndex[event.detail.id]];
+		const focusedNode = nodes[nodesIndex[id]];
 		const top = focusedNode.top + 1;
 
 		const tmpNodes = nodes;
@@ -143,11 +144,13 @@
 		nodes = computeNodesPositions(tmpNodes, NODE_PADDING);
 	}
 
-	function handleDragStarted(
-		event: CustomEvent<{ id: string; nodeHtml: HTMLDivElement; position: { x: number; y: number } }>
-	) {
+	function handleDragStarted(id: string, nodeHtml: HTMLDivElement) {
+		if (!nodesCointainer) {
+			return;
+		}
+
 		isDragging = true;
-		draggedNodeId = event.detail.id;
+		draggedNodeId = id;
 		draggingNodeStartigState = { ...nodes[nodesIndex[draggedNodeId]] };
 
 		nodes[nodesIndex[draggedNodeId]].dragging = true;
@@ -167,7 +170,7 @@
 		nodes[nodesIndex[draggedNodeId]].parentRect = nodesCointainer.getBoundingClientRect();
 	}
 
-	function handleDragEnded(event: CustomEvent<{ id: string }>) {
+	function handleDragEnded(id: string) {
 		isDragging = false;
 
 		if (!draggedNodeId || !draggingNodeStartigState) {
@@ -210,18 +213,9 @@
 		nodes = tmpNodes;
 	}
 
-	function handleDragged(
-		event: CustomEvent<{
-			id: string;
-			deltaX: number;
-		}>
-	) {
-		const draggedNode = nodes[nodesIndex[event.detail.id]];
-		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(
-			draggedNode,
-			nodes,
-			event.detail.deltaX
-		);
+	function handleDragged(id: string, deltaX: number) {
+		const draggedNode = nodes[nodesIndex[id]];
+		nodes[nodesIndex[draggedNode.id]].depth = getNewNodeDepth(draggedNode, nodes, deltaX);
 
 		nodes = computeNodesPositions(nodes, NODE_PADDING, [draggedNode.id]);
 	}
@@ -233,6 +227,10 @@
 
 		note.isFocused = true;
 		document.addEventListener('click', blurNote);
+	}
+
+	function handleFocus(id: string) {
+		note.isFocused = true;
 	}
 
 	function handleBlur() {
@@ -250,16 +248,12 @@
 			document.removeEventListener('click', blurNote);
 
 			note.isFocused = false;
-			dispatch('blurred', {
-				note: note
-			});
+			blurred(note);
 		}, 50);
 	}
 
 	function handleDeleteClick() {
-		dispatch('delete', {
-			id: note.id
-		});
+		deleted(note.id);
 	}
 
 	onMount(() => {
@@ -267,17 +261,17 @@
 		document.addEventListener('click', blurNote);
 	});
 
-	afterUpdate(() => {
+	$effect(() => {
 		nodesIndex = getNodesIndex(nodes);
 	});
 </script>
 
 <div
 	bind:this={noteHtml}
-	on:click={handleNoteFocus}
-	on:focus={handleNoteFocus}
-	on:blur={handleBlur}
-	on:keydown={() => {}}
+	onclick={handleNoteFocus}
+	onfocus={handleNoteFocus}
+	onblur={handleBlur}
+	onkeydown={() => {}}
 	role="textbox"
 	tabindex="0"
 	class="flex flex-col p-5 bg-lime-700 rounded max-w-xs gap-2"
@@ -286,8 +280,8 @@
 		type="text"
 		placeholder="Titolo"
 		class="bg-lime-700 text-white border-none"
-		on:keyup={handleTitleKeyUp}
-		on:blur={handleBlur}
+		onkeyup={handleTitleKeyUp}
+		onblur={handleBlur}
 		bind:value={title}
 	/>
 	<fieldset
@@ -303,18 +297,19 @@
 		{#each nodes as node (node.id)}
 			<NodeComponet
 				{node}
-				on:add={handleAdd}
-				on:delete={handleDelete}
-				on:dragstarted={handleDragStarted}
-				on:dragended={handleDragEnded}
-				on:dragged={handleDragged}
-				on:resized={handleResized}
-				on:blured={handleBlur}
+				add={handleAdd}
+				deleted={handleDelete}
+				dragstarted={handleDragStarted}
+				dragended={handleDragEnded}
+				dragged={handleDragged}
+				resized={handleResized}
+				blured={handleBlur}
+				focused={handleFocus}
 			/>
 		{/each}
 	</fieldset>
 
 	<div class="flex">
-		<button on:click={handleDeleteClick}>🔴</button>
+		<button onclick={handleDeleteClick}>🔴</button>
 	</div>
 </div>

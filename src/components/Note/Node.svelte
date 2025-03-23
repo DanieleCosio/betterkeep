@@ -1,61 +1,89 @@
 <script lang="ts">
 	import { debounce, getRandomString } from '../utils';
 	import type NodeProps from '$types/Node';
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import type Point from '$types/Point';
-	import { tweened } from 'svelte/motion';
+	import { tweened, Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 
 	const previousPosition: Point = { x: 0, y: 0 };
-	let textAreaHtml: HTMLTextAreaElement | undefined = undefined;
-	let isDragging: boolean = false;
+	let textAreaHtml: HTMLTextAreaElement | undefined = $state(undefined);
+	let isDragging: boolean = $state(false);
 	let xStartPosition: number = 0;
 	let requestAnimationId: number | undefined;
 	let deltaX: number = 0;
-	let value: string = '';
-	let requestSaveDebounceTimer: NodeJS.Timeout | undefined;
+	//let value: string = $state('');
+	//let requestSaveDebounceTimer: NodeJS.Timeout | undefined;
 
-	export let node: NodeProps = {
-		id: getRandomString(8),
-		isVisible: true,
-		isFocused: true,
-		dragging: false,
-		depth: 0,
-		html: undefined,
-		height: 24,
-		top: 0,
-		value: ''
-	};
+	interface Props {
+		node?: NodeProps;
+		add: (id: string) => void;
+		focused: (id: string) => void;
+		blured: (id: string) => void;
+		deleted: (id: string) => void;
+		resized: (id: string, difference: number) => void;
+		dragstarted: (id: string, nodeHtml: HTMLDivElement) => void;
+		dragged: (id: string, deltaX: number) => void;
+		dragended: (id: string) => void;
+	}
 
-	value = node.value;
-	$: node.value = value;
+	let {
+		node = $bindable({
+			id: getRandomString(8),
+			isVisible: true,
+			isFocused: true,
+			dragging: false,
+			depth: 0,
+			html: undefined,
+			height: 24,
+			top: 0,
+			value: ''
+		}),
+		focused,
+		blured,
+		add,
+		deleted,
+		resized,
+		dragstarted,
+		dragged,
+		dragended
+	}: Props = $props();
 
-	const animatedTop = tweened(node.top, {
+	//value = node.value;
+	/* run(() => {
+		node.value = value;
+	}); */
+
+	/* const animatedTop = tweened(node.top, {
 		duration: 300
+	}); */
+
+	const animatedTop = new Tween(node.top, { duration: 300, easing: cubicOut });
+
+	$effect.pre(() => {
+		//node.value = value;
+		animatedTop.set(node.top);
 	});
 
-	$: $animatedTop = node.top;
+	/* run(() => {
+		$animatedTop = node.top;
+	}); */
 
-	const dispatch = createEventDispatcher();
+	//const dispatch = createEventDispatcher();
 
 	function handleFocus() {
 		node.isFocused = true;
-		dispatch('focused', {
-			id: node.id
-		});
+		focused(node.id );
 	}
 
 	function handleBlur() {
 		if (textAreaHtml?.value === '') {
-			dispatch('delete', {
-				id: node.id
-			});
+			deleted(node.id );
 		}
 
 		node.isFocused = false;
-		dispatch('blured', {
-			id: node.id
-		});
+
+		blured(node.id );
 	}
 
 	function handleInput() {
@@ -78,32 +106,30 @@
 		}
 
 		const difference = node.height - currentHeight;
-		dispatch('resized', {
-			id: node.id,
-			difference: difference
-		});
+
+		resized(node.id, difference );
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			if (textAreaHtml?.value !== '') {
-				dispatch('add', {
-					id: node.id
-				});
+				add(node.id);
 			}
+
 			return;
 		}
 
 		if (event.key === 'Backspace' && textAreaHtml?.value === '') {
-			dispatch('delete', {
-				id: node.id
-			});
+			deleted(node.id );
+
 			return;
 		}
 	}
 
 	function handlePointerDown(event: PointerEvent) {
+		event.preventDefault();
+
 		if (!node.html) {
 			return;
 		}
@@ -116,10 +142,7 @@
 		node.nodeRect = node.html.getBoundingClientRect();
 		node.parentRect = parent.getBoundingClientRect();
 
-		dispatch('dragstarted', {
-			id: node.id,
-			nodeHtml: node.html
-		});
+		dragstarted(node.id, node.html as HTMLDivElement);
 
 		isDragging = true;
 		node.html.style.zIndex = '1000';
@@ -129,7 +152,7 @@
 		document.addEventListener('pointermove', handlePointerMove);
 		document.addEventListener('pointerup', handlePointerUp);
 
-		requestAnimationId = requestAnimationFrame(dragged);
+		requestAnimationId = requestAnimationFrame(onDragged);
 	}
 
 	function handlePointerMove(event: PointerEvent) {
@@ -168,9 +191,7 @@
 		node.html.style.zIndex = '0';
 		node.html.style.left = '0';
 
-		dispatch('dragended', {
-			id: node.id
-		});
+		dragended(node.id );
 
 		document.removeEventListener('pointermove', handlePointerMove);
 		document.removeEventListener('pointerup', handlePointerUp);
@@ -181,13 +202,10 @@
 		requestAnimationId = undefined;
 	}
 
-	function dragged() {
-		dispatch('dragged', {
-			id: node.id,
-			deltaX: deltaX
-		});
+	function onDragged() {
+		dragged(node.id, deltaX);
 
-		requestAnimationId = requestAnimationFrame(dragged);
+		requestAnimationId = requestAnimationFrame(onDragged);
 	}
 
 	onMount(() => {
@@ -203,7 +221,7 @@
 	id={node.id}
 	bind:this={node.html}
 	style="
-		top: {isDragging ? node.top : $animatedTop}px; 
+		top: {isDragging ? node.top : animatedTop.current}px; 
 		margin-left:{node.depth * 10}px; 
 	"
 	class="
@@ -212,18 +230,17 @@
 	"
 >
 	<div class="flex gap-2 items-center">
-		<span class="px-1 text-lg self-start" on:pointerdown|preventDefault={handlePointerDown}>⋮</span>
+		<span class="px-1 text-lg self-start" onpointerdown={handlePointerDown}>⋮</span>
 		<input class="w-5 h-5 self-start" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
-			on:focus={handleFocus}
-			on:blur={handleBlur}
-			on:input={handleInput}
-			on:keydown={handleKeyDown}
-			bind:value
+			onfocus={handleFocus}
+			onblur={handleBlur}
+			oninput={handleInput}
+			onkeydown={handleKeyDown}
 			class="overflow-hidden resize-none text-sm w-[100%] h-5"
 			style="height: {node.height}px;"
 			rows="1"
-		/>
+		></textarea>
 	</div>
 </div>
