@@ -8,7 +8,7 @@ export function getRandomString(length = 8): string {
 	return result;
 }
 
-export function debounce(
+/* export function debounce(
 	callback: () => void,
 	timer: NodeJS.Timeout | undefined,
 	delay = 250
@@ -19,3 +19,4 @@ export function debounce(
 
 	return setTimeout(callback, delay);
 }
+ */

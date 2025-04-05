@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { debounce, getRandomString } from '../utils';
+	import { getRandomString } from '../utils';
 	import type NodeProps from '$types/Node';
 	import { onMount } from 'svelte';
 	import type Point from '$types/Point';

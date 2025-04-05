@@ -1,42 +1,59 @@
 <script lang="ts">
 	import '../app.css';
-	import type { NoteProps } from '$types/Note';
+	import type { NoteProps } from '$types/Note.svelte';
+	import blankNote from '$types/Note.svelte';
+	import type { NoteNode } from '$types/NoteNode';
 	import Note from '../components/Note/Note.svelte';
 	import NoteStore from '../stores/NoteStore';
-	import { createNote } from '../components/Note/note';
+	import { createNote } from '../components/Note/ts/note.svelte';
+	import { onMount } from 'svelte';
 
 	let notes: NoteProps[] = $state($NoteStore);
-	let blankNote: NoteProps = $state(createNote());
+	
+	onMount(() => {
+		notes.push(blankNote);
+	});
 
 	async function handleBlurred(note: NoteProps) {
 		if (!(blankNote.title || blankNote.nodes.length)) {
 			return;
 		}
 
-		NoteStore.updateNote(note);
-		notes = $NoteStore;
-		blankNote = createNote();
+		notes.push(createNote());
 	}
 
 	function handleDelete(id: string) {
-		NoteStore.deleteNote(id);
-		notes = $NoteStore;
+		const noteIdx = notes.findIndex((note) => note.id === id);
+		if (noteIdx === -1) {
+			return;
+		}
+
+		notes.splice(noteIdx, 1);
 	}
 
 	function handleBlankDelete(id: string) {
-		NoteStore.deleteNote(id);
-		notes = $NoteStore;
-		blankNote = createNote();
+		const noteIdx = notes.findIndex((note) => note.id === id);
+		if (noteIdx === -1) {
+			return;
+		}
+
+		notes.splice(noteIdx, 1);
+		notes.push(createNote());
+	}
+
+	function updateNodes(id: string, nodes: NoteNode[]) {
+		const noteIdx = notes.findIndex((note) => note.id === id);
+		if (noteIdx === -1) {
+			return;
+		}
+
+		notes[noteIdx].nodes = nodes;
 	}
 </script>
-
-{#key blankNote}
-	<Note note={blankNote} blurred={handleBlurred} deleted={handleBlankDelete} />
-{/key}
 
 <!-- Notes -->
 <div class="flex gap-1">
 	{#each notes as note (note.id)}
-		<Note {note} blurred={handleBlurred} deleted={handleDelete} />
+		<Note {note} blurred={handleBlurred} deleted={handleDelete} updateNodes={updateNodes} />
 	{/each}
 </div>

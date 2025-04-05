@@ -4,7 +4,7 @@
 		TODO Updated_at 
 	 */
 	import type { NodesIndex } from '$types/NodesIndex';
-	import type NoteNode from '$types/NoteNode';
+	import type {NoteNode} from '$types/NoteNode';
 	import { onMount } from 'svelte';
 	import NodeComponet from './Node.svelte';
 
@@ -18,8 +18,8 @@
 		getNodesIndex,
 		sortNodesByPosition,
 		updateChildren
-	} from './note';
-	import type { NoteProps } from '$types/Note';
+	} from './ts/note.svelte';
+	import type { NoteProps } from '$types/Note.svelte';
 
 	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 10;
@@ -29,9 +29,10 @@
 		note?: NoteProps;
 		blurred: (note: NoteProps) => void;
 		deleted: (id: string) => void;
+		updateNodes: (id: string, nodes: NoteNode[]) => void;
 	}
 
-	let { note = $bindable(createNote([])), blurred, deleted }: Props = $props();
+	let { note = $bindable(createNote([])), blurred, deleted, updateNodes }: Props = $props();
 
 	let noteHtml: HTMLDivElement | undefined = $state();
 	let title: string = $state(note.title);
@@ -69,8 +70,8 @@
 	};
 
 	$effect.pre(() => {
-		note.nodes = nodes;
-		note.title = title;
+		updateNodes(note.id, nodes);
+		//note.title = title;
 	});
 
 	/* EVENTS */

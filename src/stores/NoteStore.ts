@@ -1,4 +1,4 @@
-import type { NoteProps } from '$types/Note';
+import type { NoteProps } from '$types/Note.svelte';
 import type { Writable, Updater, Subscriber, Unsubscriber, Invalidator } from 'svelte/store';
 import { writable } from 'svelte/store';
 

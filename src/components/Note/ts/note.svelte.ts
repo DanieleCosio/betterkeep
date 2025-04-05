@@ -1,18 +1,20 @@
-import type NoteNode from '$types/NoteNode';
+import type {NoteNode} from '$types/NoteNode';
 import type { NodesIndex } from '$types/NodesIndex';
-import { getRandomString } from '../utils';
-import type { NoteProps } from '$types/Note';
+import { getRandomString } from '../../utils';
+import type { NoteProps } from '$types/Note.svelte';
 
 export function createNote(nodes: NoteNode[] = []): NoteProps {
 	const createAt = Date.now();
-	return {
+	const note = $state({
 		id: getRandomString(),
 		title: '',
 		nodes: nodes,
 		isFocused: true,
 		created_at: createAt,
 		updated_at: createAt
-	};
+	});
+
+	return note;
 }
 
 export function createNewNode(top: number, height: number, depth = 0, value = ''): NoteNode {
