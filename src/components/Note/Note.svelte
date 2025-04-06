@@ -3,7 +3,7 @@
 		TODO Fix focus and blur logic 
 		TODO Updated_at 
 	 */
-	import type { NodesIndex } from '$types/NodesIndex';
+	import type { Index } from '$types/Index';
 	import type {NoteNode} from '$types/NoteNode';
 	import { onMount } from 'svelte';
 	import NodeComponet from './Node.svelte';
@@ -19,7 +19,7 @@
 		sortNodesByPosition,
 		updateChildren
 	} from './ts/note.svelte';
-	import type { NoteProps } from '$types/Note.svelte';
+	import type { NoteProps } from '$types/Note';
 
 	const NODE_HEIGHT = 20;
 	const NODE_PADDING = 10;
@@ -29,10 +29,9 @@
 		note?: NoteProps;
 		blurred: (note: NoteProps) => void;
 		deleted: (id: string) => void;
-		updateNodes: (id: string, nodes: NoteNode[]) => void;
 	}
 
-	let { note = $bindable(createNote([])), blurred, deleted, updateNodes }: Props = $props();
+	let { note = $bindable(createNote([])), blurred, deleted }: Props = $props();
 
 	let noteHtml: HTMLDivElement | undefined = $state();
 	let title: string = $state(note.title);
@@ -40,7 +39,7 @@
 	let nodesCointainer: HTMLElement | undefined = $state();
 	// svelte-ignore state_referenced_locally
 	let nodesContainerHeight: number = $state(getNewNodePosition(nodes, NODE_PADDING + 2));
-	let nodesIndex: NodesIndex = {};
+	let nodesIndex: Index = {};
 	let isDragging: boolean = $state(false);
 	let draggedNodeId: string | undefined = undefined;
 	let draggingNodeStartigState: NoteNode | undefined;
@@ -70,8 +69,9 @@
 	};
 
 	$effect.pre(() => {
-		updateNodes(note.id, nodes);
-		//note.title = title;
+		//updateNodes(note.id, nodes);
+		note.nodes = nodes;
+		note.title = title;
 	});
 
 	/* EVENTS */

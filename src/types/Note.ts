@@ -1,4 +1,3 @@
-import { createNote } from '../components/Note/ts/note.svelte';
 import type { NoteNode }from './NoteNode';
 
 export interface NoteProps {
@@ -9,6 +8,3 @@ export interface NoteProps {
 	created_at: number;
 	updated_at: number;
 }
-
-const baseNote = createNote([]);
-export default baseNote

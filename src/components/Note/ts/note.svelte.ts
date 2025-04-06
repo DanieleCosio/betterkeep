@@ -1,7 +1,7 @@
 import type {NoteNode} from '$types/NoteNode';
-import type { NodesIndex } from '$types/NodesIndex';
+import type { Index } from '$types/Index';
 import { getRandomString } from '../../utils';
-import type { NoteProps } from '$types/Note.svelte';
+import type { NoteProps } from '$types/Note';
 
 export function createNote(nodes: NoteNode[] = []): NoteProps {
 	const createAt = Date.now();
@@ -46,8 +46,8 @@ export function getChildrenNodesRecursive(nodes: NoteNode[], id: string | undefi
 	);
 }
 
-export function getNodesIndex(nodes: NoteNode[]): NodesIndex {
-	const nodesIndex: NodesIndex = {};
+export function getNodesIndex(nodes: NoteNode[]): Index {
+	const nodesIndex: Index = {};
 
 	for (let i = 0; i < nodes.length; i++) {
 		nodesIndex[nodes[i].id] = i;
@@ -59,7 +59,7 @@ export function getNodesIndex(nodes: NoteNode[]): NodesIndex {
 export function getParentId(
 	node: NoteNode,
 	nodes: NoteNode[],
-	nodesIndex: NodesIndex
+	nodesIndex: Index
 ): string | null {
 	// Nodes need to be sorted by top
 	if (node.depth === 0) {
@@ -78,7 +78,7 @@ export function getParentId(
 
 export function updateChildren(
 	nodes: NoteNode[],
-	nodesIndex: NodesIndex | undefined = undefined
+	nodesIndex: Index | undefined = undefined
 ): NoteNode[] {
 	// Nodes need to be sorted by top
 	nodesIndex = nodesIndex ? nodesIndex : getNodesIndex(nodes);
