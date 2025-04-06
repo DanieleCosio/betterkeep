@@ -5,7 +5,7 @@ import type { NoteProps } from '$types/Note';
 
 export function createNote(nodes: NoteNode[] = []): NoteProps {
 	const createAt = Date.now();
-	const note = $state({
+	return ({
 		id: getRandomString(),
 		title: '',
 		nodes: nodes,
@@ -14,7 +14,7 @@ export function createNote(nodes: NoteNode[] = []): NoteProps {
 		updated_at: createAt
 	});
 
-	return note;
+	// sreturn note;
 }
 
 export function createNewNode(top: number, height: number, depth = 0, value = ''): NoteNode {

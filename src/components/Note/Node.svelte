@@ -73,17 +73,17 @@
 
 	function handleFocus() {
 		node.isFocused = true;
-		focused(node.id );
+		focused(node.id);
 	}
 
 	function handleBlur() {
 		if (textAreaHtml?.value === '') {
-			deleted(node.id );
+			deleted(node.id);
 		}
 
 		node.isFocused = false;
 
-		blured(node.id );
+		blured(node.id);
 	}
 
 	function handleInput() {
@@ -107,7 +107,7 @@
 
 		const difference = node.height - currentHeight;
 
-		resized(node.id, difference );
+		resized(node.id, difference);
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -121,7 +121,7 @@
 		}
 
 		if (event.key === 'Backspace' && textAreaHtml?.value === '') {
-			deleted(node.id );
+			deleted(node.id);
 
 			return;
 		}
@@ -191,7 +191,7 @@
 		node.html.style.zIndex = '0';
 		node.html.style.left = '0';
 
-		dragended(node.id );
+		dragended(node.id);
 
 		document.removeEventListener('pointermove', handlePointerMove);
 		document.removeEventListener('pointerup', handlePointerUp);
@@ -234,6 +234,7 @@
 		<input class="w-5 h-5 self-start" type="checkbox" />
 		<textarea
 			bind:this={textAreaHtml}
+			bind:value={node.value}
 			onfocus={handleFocus}
 			onblur={handleBlur}
 			oninput={handleInput}

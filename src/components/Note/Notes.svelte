@@ -2,25 +2,21 @@
 	import type { NoteProps } from '$types/Note';
 	import Note from './Note.svelte';
 	import {
-		baseNote as blankNote,
 		baseNotes as notes,
-		baseNotesIndex
+		baseNotesIndex,
+		addNote,
+		removeNote
 	} from '../../stores/NoteStore.svelte';
-	import { createNote } from './ts/note.svelte';
-	import { onMount } from 'svelte';
 
 	const notesIndex = baseNotesIndex();
-
-	onMount(() => {
-		notes.push(blankNote);
-	});
-
+	
 	async function handleBlurred(note: NoteProps) {
-		if (!(blankNote.title || blankNote.nodes.length)) {
+		const blankNotePresent = notes().find((note) => !note.title && !note.nodes.length);
+		if (blankNotePresent) {
 			return;
 		}
 
-		notes.push(createNote());
+		addNote();
 	}
 
 	function handleDelete(id: string) {
@@ -29,23 +25,21 @@
 			return;
 		}
 
-		notes.splice(noteIdx, 1);
-	}
-
-	function handleBlankDelete(id: string) {
-		const noteIdx = notesIndex[id];
-		if (noteIdx === -1) {
-			return;
-		}
-
-		notes.splice(noteIdx, 1);
-		notes.push(createNote());
+		removeNote(noteIdx);
 	}
 </script>
 
-<!-- Notes -->
-<div class="flex gap-1">
-	{#each notes as note (note.id)}
-		<Note {note} blurred={handleBlurred} deleted={handleDelete} />
-	{/each}
+<!-- notes() -->
+<div class="flex flex-col gap-3">
+	{#key notes()}
+		<Note note={notes()[notes().length - 1]} blurred={handleBlurred} deleted={handleDelete} />
+	{/key}
+
+	<div class="flex gap-1">
+		{#each notes() as note (note.id)}
+			{#if note.id !== notes()[notes().length - 1].id}
+				<Note {note} blurred={handleBlurred} deleted={handleDelete} />
+			{/if}
+		{/each}
+	</div>
 </div>
